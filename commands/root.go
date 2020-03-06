@@ -17,8 +17,8 @@ var cfgFile string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:           "go-msfdb",
-	Short:         "Go Exploit DB",
-	Long:          `Go Exploit DB`,
+	Short:         "Go Metasploit DB",
+	Long:          `Go Metasploit DB`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 }
