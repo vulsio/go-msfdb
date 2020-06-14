@@ -7,12 +7,15 @@ import (
 	"github.com/takuzoo3868/go-msfdb/models"
 )
 
+// DB :
 type DB interface {
 	Name() string
 	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
 	MigrateDB() error
+	InsertMetasploit([]*models.Metasploit) error
 }
 
+// NewDB :
 func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
 		log15.Error("Failed to new db.", "err", err)
@@ -39,8 +42,6 @@ func newDB(dbType string) (DB, error) {
 	switch dbType {
 	case dialectSqlite3, dialectMysql, dialectPostgreSQL:
 		return &RDBDriver{name: dbType}, nil
-	case dialectRedis:
-		return &RedisDriver{name: dbType}, nil
 	}
 	return nil, fmt.Errorf("Invalid database dialect, %s", dbType)
 }

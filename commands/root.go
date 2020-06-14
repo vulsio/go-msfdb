@@ -7,9 +7,9 @@ import (
 
 	"github.com/inconshreveable/log15"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/takuzoo3868/go-msfdb/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/takuzoo3868/go-msfdb/utils"
 )
 
 var cfgFile string
@@ -86,5 +86,5 @@ func initConfig() {
 	quiet := viper.GetBool("quiet")
 	debug := viper.GetBool("debug")
 	logJSON := viper.GetBool("log-json")
-	util.SetLogger(logDir, quiet, debug, logJSON)
+	utils.SetLogger(logDir, quiet, debug, logJSON)
 }

@@ -1,13 +1,17 @@
-package util
+package utils
 
 import (
+	"bytes"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
 	"github.com/inconshreveable/log15"
 	"github.com/k0kubun/pp"
+	"golang.org/x/xerrors"
 )
 
 // GenWorkers :
@@ -21,6 +25,31 @@ func GenWorkers(num int) chan<- func() {
 		}()
 	}
 	return tasks
+}
+
+// Exists :
+func Exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
+}
+
+// Exec :
+func Exec(command string, args []string) (string, error) {
+	cmd := exec.Command(command, args...)
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+	if err := cmd.Run(); err != nil {
+		log.Println(stderrBuf.String())
+		return "", xerrors.Errorf("failed to exec: %w", err)
+	}
+	return stdoutBuf.String(), nil
 }
 
 // GetDefaultLogDir :

@@ -1,8 +1,10 @@
 package db
 
-import(
+import (
 	"fmt"
 
+	"github.com/cheggaaa/pb"
+	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	sqlite3 "github.com/mattn/go-sqlite3"
 	// Required MySQL.  See http://jinzhu.me/gorm/database.html#connecting-to-a-database
@@ -55,9 +57,31 @@ func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, e
 func (r *RDBDriver) MigrateDB() error {
 	//TODO Add FetchMeta
 	if err := r.conn.AutoMigrate(
-		&models.Rapid7Database{},
+		&models.Metasploit{},
 	).Error; err != nil {
 		return fmt.Errorf("Failed to migrate. err: %s", err)
 	}
+	return nil
+}
+
+// InsertMetasploit :
+func (r *RDBDriver) InsertMetasploit(exploits []*models.Metasploit) (err error) {
+	log15.Info(fmt.Sprintf("Inserting %d Exploits", len(exploits)))
+	return r.deleteAndInsertMetasploit(r.conn, exploits)
+}
+
+func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, exploits []*models.Metasploit) (err error) {
+	bar := pb.StartNew(len(exploits))
+	tx := conn.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		tx.Commit()
+	}()
+
+	// TODO: insert
+	bar.Finish()
 	return nil
 }
