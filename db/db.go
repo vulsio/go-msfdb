@@ -10,7 +10,9 @@ import (
 // DB :
 type DB interface {
 	Name() string
+	CloseDB() error
 	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
+	DropDB() error
 	MigrateDB() error
 	InsertMetasploit([]*models.Metasploit) error
 }
@@ -18,11 +20,11 @@ type DB interface {
 // NewDB :
 func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
-		log15.Error("Failed to new db.", "err", err)
+		log15.Error("Failed to new db", "err", err)
 		return driver, false, err
 	}
 
-	log15.Info("Opening Database.", "db", driver.Name())
+	log15.Info("Opening DB", "db", driver.Name())
 	if locked, err := driver.OpenDB(dbType, dbPath, debugSQL); err != nil {
 		if locked {
 			return nil, true, err
@@ -30,9 +32,13 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 		return nil, false, err
 	}
 
-	log15.Info("Migrating DB.", "db", driver.Name())
+	log15.Info("Migrating DB", "db", driver.Name())
+	if err := driver.DropDB(); err != nil {
+		log15.Error("Failed to drop tables", "err", err)
+		return driver, false, err
+	}
 	if err := driver.MigrateDB(); err != nil {
-		log15.Error("Failed to migrate db.", "err", err)
+		log15.Error("Failed to migrate db", "err", err)
 		return driver, false, err
 	}
 	return driver, false, nil

@@ -3,6 +3,7 @@ module github.com/takuzoo3868/go-msfdb
 go 1.14
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/cheggaaa/pb v2.0.7+incompatible
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/jinzhu/gorm v1.9.12

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/xerrors"
 	"github.com/inconshreveable/log15"
 	"github.com/takuzoo3868/go-msfdb/utils"
+	"golang.org/x/xerrors"
 )
 
 // Operations :

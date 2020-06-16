@@ -28,6 +28,10 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.go-msfdb.yaml)")
 
+	RootCmd.PersistentFlags().String("log-dir", "", "/path/to/log")
+	viper.BindPFlag("log-dir", RootCmd.PersistentFlags().Lookup("log-dir"))
+	viper.SetDefault("log-dir", utils.GetDefaultLogDir())
+
 	RootCmd.PersistentFlags().Bool("log-json", false, "output log as JSON")
 	viper.BindPFlag("log-json", RootCmd.PersistentFlags().Lookup("log-json"))
 	viper.SetDefault("log-json", false)

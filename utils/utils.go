@@ -2,17 +2,66 @@ package utils
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/inconshreveable/log15"
 	"github.com/k0kubun/pp"
 	"golang.org/x/xerrors"
 )
+
+// CacheDir :
+func CacheDir() string {
+	tmpDir, err := os.UserCacheDir()
+	if err != nil {
+		tmpDir = os.TempDir()
+	}
+	return filepath.Join(tmpDir, "go-msfdb")
+}
+
+// FileWalk :
+func FileWalk(root string, walkFn func(r io.Reader, path string) error) error {
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		if info.Size() == 0 {
+			log15.Warn("invalid size", "path", path)
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return xerrors.Errorf("failed to open file: %w", err)
+		}
+		defer f.Close()
+
+		if err = walkFn(f, path); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return xerrors.Errorf("error in file walk: %w", err)
+	}
+	return nil
+}
+
+// FileNameWithoutExtension :
+func FileNameWithoutExtension(path string) string {
+	basename := filepath.Base(path)
+	return strings.TrimSuffix(basename, filepath.Ext(basename))
+}
 
 // GenWorkers :
 func GenWorkers(num int) chan<- func() {
@@ -95,4 +144,14 @@ func SetLogger(logDir string, quiet, debug, logJSON bool) {
 		hundler = lvlHundler
 	}
 	log15.Root().SetHandler(hundler)
+}
+
+// DeleteNil :
+func DeleteNil(errs []error) (new []error) {
+	for _, err := range errs {
+		if err != nil {
+			new = append(new, err)
+		}
+	}
+	return new
 }

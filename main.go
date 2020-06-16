@@ -18,14 +18,11 @@ func main() {
 	var v = flag.Bool("v", false, "Show version")
 
 	if envArgs := os.Getenv("GOVAL_DICTIONARY_ARGS"); 0 < len(envArgs) {
-		if err := flag.CommandLine.Parse(strings.Fields(envArgs)); err != nil {
-			fmt.Printf("Failed to get ENV Vars: %s", err)
-			os.Exit(1)
-		}
+		flag.CommandLine.Parse(strings.Fields(envArgs))
 	} else {
 		flag.Parse()
 	}
-	
+
 	if *v {
 		fmt.Printf("go-msfdb %s \n", version)
 		os.Exit(0)
@@ -35,5 +32,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
