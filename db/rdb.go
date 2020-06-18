@@ -156,7 +156,7 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
 
 	for _, e := range errs.GetErrors() {
 		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module by CveID", "err", e)
+			log15.Error("Failed to get module info by CVE", "err", e)
 		}
 	}
 	return ms
@@ -174,7 +174,7 @@ func (r *RDBDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
 
 	for _, e := range errs.GetErrors() {
 		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module by EdbID", "err", e)
+			log15.Error("Failed to get module info by EDB-ID", "err", e)
 		}
 	}
 	return ms
