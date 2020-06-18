@@ -16,7 +16,7 @@ type Metasploit struct {
 	gorm.Model  `json:"-" xml:"-"`
 	Name        string
 	Title       string
-	Discription string
+	Description string
 	CveID       string
 	EdbIDs      []Edb       `json:",omitempty" gorm:"many2many:msf_edbs;"`
 	References  []Reference `json:",omitempty" gorm:"many2many:msf_refs;"`
@@ -24,13 +24,13 @@ type Metasploit struct {
 
 // Edb has EdbID
 type Edb struct {
-	ID    int64 `json:",omitempty"`
+	ID    uint `json:",omitempty"`
 	EdbID string
 }
 
 // Reference is Child model of Metasploit
 // It holds reference information about the CVE
 type Reference struct {
-	ID   int64  `json:",omitempty"`
+	ID   uint   `json:",omitempty"`
 	Link string `sql:"type:text"`
 }

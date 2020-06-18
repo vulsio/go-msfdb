@@ -22,7 +22,7 @@ const (
 type Module struct {
 	Name        string   `json:"Name"`
 	Title       string   `json:"Title"`
-	Discription string   `json:"Discription,omitempty"`
+	Description string   `json:"Discription,omitempty"`
 	CveIDs      []string `json:"CveIDs"`
 	EdbIDs      []string `json:"EdbIDs,omitempty"`
 	References  []string `json:"References,omitempty"`
@@ -102,7 +102,7 @@ func convertToModel(path string, item *Module) (*models.Metasploit, error) {
 	return &models.Metasploit{
 		Name:        item.Name,
 		Title:       item.Title,
-		Discription: item.Discription,
+		Description: item.Description,
 		CveID:       cveID,
 		EdbIDs:      edbIDs,
 		References:  refs,

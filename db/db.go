@@ -10,15 +10,17 @@ import (
 // DB :
 type DB interface {
 	Name() string
-	CloseDB() error
 	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
 	DropDB() error
 	MigrateDB() error
+	CloseDB() error
 	InsertMetasploit([]*models.Metasploit) error
+	GetModuleByCveID(string) []*models.Metasploit
+	GetModuleByEdbID(string) []*models.Metasploit
 }
 
 // NewDB :
-func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
+func NewDB(dbType string, dbPath string, debugSQL bool, isFetch bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
 		log15.Error("Failed to new db", "err", err)
 		return driver, false, err
@@ -32,11 +34,15 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 		return nil, false, err
 	}
 
-	log15.Info("Migrating DB", "db", driver.Name())
-	if err := driver.DropDB(); err != nil {
-		log15.Error("Failed to drop tables", "err", err)
-		return driver, false, err
+	if isFetch {
+		log15.Info("Init DB", "db", driver.Name())
+		if err := driver.DropDB(); err != nil {
+			log15.Error("Failed to drop tables", "err", err)
+			return driver, false, err
+		}
 	}
+
+	log15.Info("Migrating DB", "db", driver.Name())
 	if err := driver.MigrateDB(); err != nil {
 		log15.Error("Failed to migrate db", "err", err)
 		return driver, false, err

@@ -24,7 +24,7 @@ func main() {
 	}
 
 	if *v {
-		fmt.Printf("go-msfdb %s \n", version)
+		fmt.Printf("%s %s \n", Name, version)
 		os.Exit(0)
 	}
 

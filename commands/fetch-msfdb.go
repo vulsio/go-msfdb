@@ -22,10 +22,13 @@ func init() {
 }
 
 func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
+	var isFetch = true
+
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
+		isFetch,
 	)
 	if err != nil {
 		if locked {

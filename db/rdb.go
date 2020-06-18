@@ -143,3 +143,39 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []*models.M
 	log15.Info("CveID Metasploit Count", "count", count)
 	return nil
 }
+
+// GetModuleByCveID :
+func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
+	ms := []*models.Metasploit{}
+	var errs gorm.Errors
+
+	errs = errs.Add(r.conn.Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error)
+	for _, m := range ms {
+		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+	}
+
+	for _, e := range errs.GetErrors() {
+		if !gorm.IsRecordNotFoundError(e) {
+			log15.Error("Failed to get module by CveID", "err", e)
+		}
+	}
+	return ms
+}
+
+// GetModuleByEdbID :
+func (r *RDBDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
+	ms := []*models.Metasploit{}
+	var errs gorm.Errors
+
+	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits INNER JOIN edbs ON metasploits.id = edbs.id WHERE edbs.edb_id = ?", edbID).Scan(&ms).Error)
+	for _, m := range ms {
+		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+	}
+
+	for _, e := range errs.GetErrors() {
+		if !gorm.IsRecordNotFoundError(e) {
+			log15.Error("Failed to get module by EdbID", "err", e)
+		}
+	}
+	return ms
+}
