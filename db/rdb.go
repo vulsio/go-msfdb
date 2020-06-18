@@ -167,7 +167,7 @@ func (r *RDBDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
 	ms := []*models.Metasploit{}
 	var errs gorm.Errors
 
-	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits INNER JOIN edbs ON metasploits.id = edbs.id WHERE edbs.edb_id = ?", edbID).Scan(&ms).Error)
+	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits LEFT JOIN msf_edbs ON metasploits.id = msf_edbs.metasploit_id LEFT JOIN edbs ON msf_edbs.edb_id = edbs.id WHERE edbs.exploit_unique_id = ?", edbID).Scan(&ms).Error)
 	for _, m := range ms {
 		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
 	}

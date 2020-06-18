@@ -18,14 +18,14 @@ type Metasploit struct {
 	Title       string
 	Description string
 	CveID       string
-	EdbIDs      []Edb       `json:",omitempty" gorm:"many2many:msf_edbs;"`
+	Edbs        []Edb       `json:",omitempty" gorm:"many2many:msf_edbs;"`
 	References  []Reference `json:",omitempty" gorm:"many2many:msf_refs;"`
 }
 
-// Edb has EdbID
+// Edb has Exploit-ID
 type Edb struct {
-	ID    uint `json:",omitempty"`
-	EdbID string
+	ID              uint `json:",omitempty"`
+	ExploitUniqueID string
 }
 
 // Reference is Child model of Metasploit

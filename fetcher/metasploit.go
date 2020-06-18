@@ -85,7 +85,7 @@ func convertToModel(path string, item *Module) (*models.Metasploit, error) {
 	edbIDs := []models.Edb{}
 	for _, e := range item.EdbIDs {
 		edbID := models.Edb{
-			EdbID: e,
+			ExploitUniqueID: e,
 		}
 		edbIDs = append(edbIDs, edbID)
 	}
@@ -104,7 +104,7 @@ func convertToModel(path string, item *Module) (*models.Metasploit, error) {
 		Title:       item.Title,
 		Description: item.Description,
 		CveID:       cveID,
-		EdbIDs:      edbIDs,
+		Edbs:        edbIDs,
 		References:  refs,
 	}, nil
 }
