@@ -6,14 +6,14 @@ import (
 	"regexp"
 
 	"github.com/inconshreveable/log15"
-	"github.com/takuzoo3868/go-msfdb/db"
-	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/takuzoo3868/go-msfdb/db"
+	"github.com/takuzoo3868/go-msfdb/models"
 )
 
 var (
-	cveIDRegexp       = regexp.MustCompile(`^CVE-\d{1,}-\d{1,}$`)
+	cveIDRegexp = regexp.MustCompile(`^CVE-\d{1,}-\d{1,}$`)
 	edbIDRegexp = regexp.MustCompile(`^EDB-\d{1,}$`)
 )
 
@@ -29,11 +29,15 @@ func init() {
 	RootCmd.AddCommand(searchCmd)
 
 	searchCmd.PersistentFlags().String("type", "", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)")
-	viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type"))
+	if err := viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type")); err != nil {
+		panic(err)
+	}
 	viper.SetDefault("type", "CVE")
 
 	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)")
-	viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param"))
+	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
+		panic(err)
+	}
 	viper.SetDefault("param", "")
 }
 
@@ -56,30 +60,38 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 	searchType := viper.GetString("type")
 	param := viper.GetString("param")
 
-	var results = []*models.Metasploit{}
 	switch searchType {
 	case "CVE":
 		if !cveIDRegexp.Match([]byte(param)) {
 			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
 			return errors.New("Invalid CVE Param")
 		}
-		results = driver.GetModuleByCveID(param)
+		results := driver.GetModuleByCveID(param)
+		if err := printResults(results); err != nil {
+			return err
+		}
 	case "EDB":
 		if !edbIDRegexp.MatchString(param) {
 			log15.Error("Specify the search type [EDB] parameters like `--param EDB-xxxx`")
 			return errors.New("Invalid EDB Param")
 		}
-		results = driver.GetModuleByEdbID(param)
+		results := driver.GetModuleByEdbID(param)
+		if err := printResults(results); err != nil {
+			return err
+		}
 	default:
-		log15.Error("Specify the search type [ CVE / EDB].")
+		log15.Error("Specify the search type [CVE / EDB].")
 		return errors.New("Invalid Type")
 	}
+	return nil
+}
 
+func printResults(results []*models.Metasploit) error {
 	fmt.Println("")
 	fmt.Println("Results: CVE-Metasploit Record")
 	fmt.Println("---------------------------------------")
 	if len(results) == 0 {
-		fmt.Println("No Record Found")
+		return errors.New("No Record Found")
 	}
 	for _, r := range results {
 		fmt.Printf("\n[*] CVE: %s\n", r.CveID)

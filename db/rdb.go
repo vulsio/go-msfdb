@@ -101,7 +101,7 @@ func (r *RDBDriver) MigrateDB() error {
 
 // InsertMetasploit :
 func (r *RDBDriver) InsertMetasploit(records []*models.Metasploit) (err error) {
-	log15.Info(fmt.Sprintf("Inserting Modules having CVEs..."))
+	log15.Info("Inserting Modules having CVEs...")
 	return r.deleteAndInsertMetasploit(r.conn, records)
 }
 

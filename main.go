@@ -9,16 +9,20 @@ import (
 	"github.com/takuzoo3868/go-msfdb/commands"
 )
 
-// Name :
+// Name ... Name
 const Name string = "go-msfdb"
 
+// Version ... Version
 var version = "0.0.1"
 
 func main() {
 	var v = flag.Bool("v", false, "Show version")
 
 	if envArgs := os.Getenv("GOVAL_DICTIONARY_ARGS"); 0 < len(envArgs) {
-		flag.CommandLine.Parse(strings.Fields(envArgs))
+		if err := flag.CommandLine.Parse(strings.Fields(envArgs)); err != nil {
+			fmt.Printf("Failed to parse ENV_VARs: %s", err)
+			os.Exit(1)
+		}
 	} else {
 		flag.Parse()
 	}

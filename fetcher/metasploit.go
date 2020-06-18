@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	repoURL = "https://github.com/vulsio/msfdb-list.git"
-	msfDir  = "rapid7"
+	// repoURL = "https://github.com/vulsio/msfdb-list.git"
+	msfDir = "rapid7"
 )
 
 // Module : https://github.com/takuzoo3868/msfdb-list-updater
