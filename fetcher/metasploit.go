@@ -6,7 +6,7 @@ import (
 	"io"
 	"path/filepath"
 
-	// "github.com/inconshreveable/log15"
+	"github.com/inconshreveable/log15"
 	"github.com/takuzoo3868/go-msfdb/git"
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	// repoURL = "https://github.com/vulsio/msfdb-list.git"
-	msfDir = "rapid7"
+	repoURL = "https://github.com/vulsio/msfdb-list.git"
+	msfDir  = "rapid7"
 )
 
 // Module : https://github.com/takuzoo3868/msfdb-list-updater
@@ -37,16 +37,16 @@ type Config struct {
 func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
 	// Clone vuln-list repository
 	dir := filepath.Join(utils.CacheDir(), "msfdb-list")
-	// updatedFiles, err := c.GitClient.CloneOrPull(repoURL, dir)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// log15.Info("Updated files", "count", len(updatedFiles))
+	updatedFiles, err := c.GitClient.CloneOrPull(repoURL, dir)
+	if err != nil {
+		return nil, err
+	}
+	log15.Info("Updated files", "count", len(updatedFiles))
 
-	// // Only last_updated.json
-	// if len(updatedFiles) <= 1 {
-	// 	return nil, nil
-	// }
+	// Only last_updated.json
+	if len(updatedFiles) <= 1 {
+		return nil, nil
+	}
 
 	rootDir := filepath.Join(dir, msfDir)
 
