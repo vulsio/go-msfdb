@@ -2,18 +2,21 @@
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/takuzoo3868/go-msfdb/blob/master/LICENSE)
 
 This is a tool for searching CVEs in Metasploit-Framework modules from [msfdb-list](https://github.com/vulsio/msfdb-list).
-<!-- Exploits are inserted at sqlite database(go-msfdb) can be searched by command line interface.
-In server mode, a simple Web API can be used. -->
+Metasploit modules are inserted at sqlite database(go-msfdb) can be searched by command line interface.
+In server mode, a simple Web API can be used.
+
+### Docker Deployment
+There's a Docker image available `docker pull takuzoo3868/go-msfdb`. When using the container, it takes the same arguments as the normal command line.
 
 ### Installation for local deployment  
 ###### Requirements  
-go-exploitdb requires the following packages.
+go-msfdb requires the following packages.
 - git
 - SQLite3, MySQL, PostgreSQL
 - lastest version of go
     - https://golang.org/doc/install
 
-###### Install go-exploitdb
+###### Install go-msfdb
 ```bash
 $ mkdir -p $GOPATH/src/github.com/takuzoo3868
 $ cd $GOPATH/src/github.com/takuzoo3868
