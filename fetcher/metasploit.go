@@ -22,7 +22,7 @@ const (
 type Module struct {
 	Name        string   `json:"Name"`
 	Title       string   `json:"Title"`
-	Description string   `json:"Discription,omitempty"`
+	Description string   `json:"Description,omitempty"`
 	CveIDs      []string `json:"CveIDs"`
 	EdbIDs      []string `json:"EdbIDs,omitempty"`
 	References  []string `json:"References,omitempty"`
@@ -43,10 +43,10 @@ func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
 	}
 	log15.Info("Updated files", "count", len(updatedFiles))
 
-	// Only last_updated.json
-	if len(updatedFiles) <= 1 {
-		return nil, nil
-	}
+	// // Only last_updated.json
+	// if len(updatedFiles) <= 1 {
+	// 	return nil, nil
+	// }
 
 	rootDir := filepath.Join(dir, msfDir)
 
