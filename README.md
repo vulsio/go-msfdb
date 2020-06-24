@@ -12,7 +12,7 @@ There's a Docker image available `docker pull takuzoo3868/go-msfdb`. When using 
 ###### Requirements  
 go-msfdb requires the following packages.
 - git
-- SQLite3, MySQL, PostgreSQL
+- SQLite3, MySQL, PostgreSQL, Redis
 - lastest version of go
     - https://golang.org/doc/install
 
