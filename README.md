@@ -6,7 +6,7 @@ Metasploit modules are inserted at sqlite database(go-msfdb) can be searched by 
 In server mode, a simple Web API can be used.
 
 ### Docker Deployment
-There's a Docker image available `docker pull takuzoo3868/go-msfdb`. When using the container, it takes the same arguments as the normal command line.
+There's a Docker image available `docker pull vuls/go-msfdb`. When using the container, it takes the same arguments as the normal command line.
 
 ### Installation for local deployment  
 ###### Requirements  
