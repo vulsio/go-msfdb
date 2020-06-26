@@ -25,11 +25,11 @@ func init() {
 	}
 	viper.SetDefault("bind", "127.0.0.1")
 
-	serverCmd.PersistentFlags().String("port", "", "HTTP server port number (default: 1326")
+	serverCmd.PersistentFlags().String("port", "", "HTTP server port number (default: 1327")
 	if err := viper.BindPFlag("port", serverCmd.PersistentFlags().Lookup("port")); err != nil {
 		panic(err)
 	}
-	viper.SetDefault("port", "1326")
+	viper.SetDefault("port", "1327")
 
 }
 

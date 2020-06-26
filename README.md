@@ -131,7 +131,7 @@ Usage:
 Flags:
       --bind string   HTTP server bind to IP address (default: loop back interface
   -h, --help          help for server
-      --port string   HTTP server port number (default: 1326
+      --port string   HTTP server port number (default: 1327
 
 Global Flags:
       --config string       config file (default is $HOME/.go-msfdb.yaml)
@@ -150,12 +150,12 @@ Global Flags:
 $ go run main.go server
 
 INFO[06-18|17:23:14] Starting HTTP Server...
-INFO[06-18|17:23:14] Listening...                             URL=127.0.0.1:1326
+INFO[06-18|17:23:14] Listening...                             URL=127.0.0.1:1327
 ```
 
 ###### Search Modules Get by cURL for CVE(eg. CVE-2019-0708)
 ```bash
-$ curl http://127.0.0.1:1326/cves/CVE-2019-0708 | jq
+$ curl http://127.0.0.1:1327/cves/CVE-2019-0708 | jq
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  1992  100  1992    0     0   628k      0 --:--:-- --:--:-- --:--:--  648k
