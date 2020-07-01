@@ -102,6 +102,7 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 		}
 	}
 	log15.Info("CveID Metasploit Count", "count", count)
+	bar.Finish()
 	return nil
 }
 
