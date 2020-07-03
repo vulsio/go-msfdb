@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,11 @@ func (gc Config) CloneRepo(url, repoPath string) (map[string]struct{}, error) {
 	updatedFiles := map[string]struct{}{}
 	if exists {
 		log15.Info("initializing", "repo", repoPath)
+		pathNode := filepath.Base(repoPath)
+		if pathNode != "msfdb-list" {
+			return nil, fmt.Errorf("repoPath incorrect, %s", repoPath)
+		}
+
 		if err = os.RemoveAll(repoPath); err != nil {
 			return nil, err
 		}
