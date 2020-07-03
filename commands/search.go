@@ -8,6 +8,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/takuzoo3868/go-msfdb/db"
 	"github.com/takuzoo3868/go-msfdb/models"
 )

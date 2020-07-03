@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/inconshreveable/log15"
+	"golang.org/x/xerrors"
+
 	"github.com/takuzoo3868/go-msfdb/git"
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -37,7 +38,7 @@ type Config struct {
 func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
 	// Clone vuln-list repository
 	dir := filepath.Join(utils.CacheDir(), "msfdb-list")
-	updatedFiles, err := c.GitClient.CloneOrPull(repoURL, dir)
+	updatedFiles, err := c.GitClient.CloneRepo(repoURL, dir)
 	if err != nil {
 		return nil, err
 	}
