@@ -7,6 +7,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	sqlite3 "github.com/mattn/go-sqlite3"
+
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
 

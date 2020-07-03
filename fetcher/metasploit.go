@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/inconshreveable/log15"
+	"golang.org/x/xerrors"
+
 	"github.com/takuzoo3868/go-msfdb/git"
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
-	"golang.org/x/xerrors"
 )
 
 const (

@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/inconshreveable/log15"
-	"github.com/takuzoo3868/go-msfdb/utils"
 	"golang.org/x/xerrors"
+
+	"github.com/takuzoo3868/go-msfdb/utils"
 )
 
 // Operations :
@@ -33,7 +34,7 @@ func (gc Config) CloneRepo(url, repoPath string) (map[string]struct{}, error) {
 			return nil, err
 		}
 	}
-	
+
 	log15.Info("git clone", "repo", repoPath)
 	if err = os.MkdirAll(repoPath, 0700); err != nil {
 		return nil, err

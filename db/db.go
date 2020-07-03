@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/inconshreveable/log15"
+
 	"github.com/takuzoo3868/go-msfdb/models"
 )
 

@@ -6,8 +6,9 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/inconshreveable/log15"
-	"github.com/takuzoo3868/go-msfdb/models"
 	pb "gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/takuzoo3868/go-msfdb/models"
 )
 
 /**
