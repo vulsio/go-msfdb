@@ -37,7 +37,7 @@ type Config struct {
 func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
 	// Clone vuln-list repository
 	dir := filepath.Join(utils.CacheDir(), "msfdb-list")
-	updatedFiles, err := c.GitClient.CloneOrPull(repoURL, dir)
+	updatedFiles, err := c.GitClient.CloneRepo(repoURL, dir)
 	if err != nil {
 		return nil, err
 	}
