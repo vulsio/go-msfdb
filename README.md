@@ -57,7 +57,7 @@ Use "go-msfdb fetch [command] --help" for more information about a command.
 
 ###### Fetch and Insert msfdb-list  
 ```bash
-$ go-msfdbdb fetch msfdb
+$ go-msfdb fetch msfdb
 ```
 
 ### Usage: Search Module's info  
