@@ -23,8 +23,7 @@ type DB interface {
 // NewDB :
 func NewDB(dbType string, dbPath string, debugSQL bool, isFetch bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
-		log15.Error("Failed to new db", "err", err)
-		return driver, false, err
+		return driver, false, fmt.Errorf("Failed to new db: %w", err)
 	}
 
 	log15.Info("Opening DB", "db", driver.Name())
@@ -38,15 +37,13 @@ func NewDB(dbType string, dbPath string, debugSQL bool, isFetch bool) (driver DB
 	if isFetch {
 		log15.Info("Init DB", "db", driver.Name())
 		if err := driver.DropDB(); err != nil {
-			log15.Error("Failed to drop tables", "err", err)
-			return driver, false, err
+			return driver, false, fmt.Errorf("Failed to drop tables: %w", err)
 		}
 	}
 
 	log15.Info("Migrating DB", "db", driver.Name())
 	if err := driver.MigrateDB(); err != nil {
-		log15.Error("Failed to migrate db", "err", err)
-		return driver, false, err
+		return driver, false, fmt.Errorf("Failed to migrate db: %w", err)
 	}
 	return driver, false, nil
 }
