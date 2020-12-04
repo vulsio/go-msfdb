@@ -1,10 +1,11 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/inconshreveable/log15"
 	pb "gopkg.in/cheggaaa/pb.v1"
 
@@ -48,6 +49,7 @@ func (r *RedisDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool,
 }
 
 func (r *RedisDriver) connectRedis(dbPath string) error {
+	ctx := context.Background()
 	var err error
 	var option *redis.Options
 	if option, err = redis.ParseURL(dbPath); err != nil {
@@ -55,7 +57,7 @@ func (r *RedisDriver) connectRedis(dbPath string) error {
 		return err
 	}
 	r.conn = redis.NewClient(option)
-	err = r.conn.Ping().Err()
+	err = r.conn.Ping(ctx).Err()
 	return err
 }
 
@@ -80,6 +82,7 @@ func (r *RedisDriver) MigrateDB() error {
 
 // InsertMetasploit :
 func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error) {
+	ctx := context.Background()
 	log15.Info("Inserting Modules having CVEs...")
 	bar := pb.StartNew(len(records))
 
@@ -93,12 +96,12 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 			return fmt.Errorf("Failed to marshal json. err: %s", err)
 		}
 
-		if result := pipe.HSet(cveIDPrefix+record.CveID, record.Name, string(j)); result.Err() != nil {
+		if result := pipe.HSet(ctx, cveIDPrefix+record.CveID, record.Name, string(j)); result.Err() != nil {
 			return fmt.Errorf("Failed to HSet CVE. err: %s", result.Err())
 		}
 		count++
 
-		if _, err = pipe.Exec(); err != nil {
+		if _, err = pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
 	}
@@ -109,8 +112,9 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 
 // GetModuleByCveID :
 func (r *RedisDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
+	ctx := context.Background()
 	modules := []*models.Metasploit{}
-	results := r.conn.HGetAll(cveIDPrefix + cveID)
+	results := r.conn.HGetAll(ctx, cveIDPrefix+cveID)
 	if results.Err() != nil {
 		log15.Error("Failed to get cve.", "err", results.Err())
 		return nil
