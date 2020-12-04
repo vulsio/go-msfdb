@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/go-redis/redis/v8"
 	"github.com/inconshreveable/log15"
-	pb "gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/takuzoo3868/go-msfdb/models"
 )

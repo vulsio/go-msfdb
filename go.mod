@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
-	github.com/cheggaaa/pb v2.0.7+incompatible
+	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/go-redis/redis/v8 v8.4.0
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
 	github.com/jinzhu/gorm v1.9.12
@@ -19,11 +19,4 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
-	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
-	gopkg.in/cheggaaa/pb.v1 v1.0.28
-	gopkg.in/cheggaaa/pb.v2 v2.0.7 // indirect
-	gopkg.in/fatih/color.v1 v1.7.0 // indirect
-	gopkg.in/mattn/go-colorable.v0 v0.1.0 // indirect
-	gopkg.in/mattn/go-isatty.v0 v0.0.4 // indirect
-	gopkg.in/mattn/go-runewidth.v0 v0.0.4 // indirect
 )
