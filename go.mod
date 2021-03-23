@@ -1,6 +1,6 @@
 module github.com/takuzoo3868/go-msfdb
 
-go 1.14
+go 1.16
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a

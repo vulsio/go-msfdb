@@ -7,6 +7,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	sqlite3 "github.com/mattn/go-sqlite3"
+	"golang.org/x/xerrors"
 
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
@@ -58,8 +59,11 @@ func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, e
 
 // CloseDB close Database
 func (r *RDBDriver) CloseDB() (err error) {
+	if r.conn == nil {
+		return
+	}
 	if err = r.conn.Close(); err != nil {
-		return fmt.Errorf("Failed to close DB. Type: %s. err: %s", r.name, err)
+		return xerrors.Errorf("Failed to close DB. Type: %s. err: %w", r.name, err)
 	}
 	return
 }
