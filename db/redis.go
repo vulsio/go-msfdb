@@ -8,6 +8,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-redis/redis/v8"
 	"github.com/inconshreveable/log15"
+	"golang.org/x/xerrors"
 
 	"github.com/takuzoo3868/go-msfdb/models"
 )
@@ -63,9 +64,11 @@ func (r *RedisDriver) connectRedis(dbPath string) error {
 
 // CloseDB close Database
 func (r *RedisDriver) CloseDB() (err error) {
-	if err = r.conn.Close(); err != nil {
-		err = fmt.Errorf("Failed to close DB. Type: %s. err: %s", r.name, err)
+	if r.conn == nil {
 		return
+	}
+	if err = r.conn.Close(); err != nil {
+		return xerrors.Errorf("Failed to close DB. Type: %s. err: %w", r.name, err)
 	}
 	return
 }
