@@ -18,7 +18,7 @@ RUN apk add --no-cache ca-certificates git \
 
 COPY --from=builder /go/bin/go-msfdb /usr/local/bin/
 
-VOLUME [$WORKDIR, $LOGDIR]
+VOLUME ["$WORKDIR", "$LOGDIR"]
 WORKDIR $WORKDIR
 ENV PWD $WORKDIR
 
