@@ -60,7 +60,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 
 	switch searchType {
 	case "CVE":
-		if !cveIDRegexp.Match([]byte(param)) {
+		if !cveIDRegexp.MatchString(param) {
 			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
 			return errors.New("Invalid CVE Param")
 		}
