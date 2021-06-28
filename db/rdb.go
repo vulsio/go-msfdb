@@ -81,6 +81,8 @@ func (r *RDBDriver) MigrateDB() error {
 	var errs gorm.Errors
 	// Metasploits
 	errs = errs.Add(r.conn.Model(&models.Metasploit{}).AddIndex("idx_metasploit_cve_id", "cve_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Reference{}).AddIndex("idx_references_metasploit_id", "metasploit_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_exploit_unique_id", "exploit_unique_id").Error)
 
 	for _, e := range errs {
 		if e != nil {
@@ -136,35 +138,23 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 // GetModuleByCveID :
 func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ms := []models.Metasploit{}
-	var errs gorm.Errors
-
-	errs = errs.Add(r.conn.Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error)
-	for _, m := range ms {
-		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+	err := r.conn.Preload("References").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		log15.Error("Failed to get module info by CVE", "err", err)
+		return []models.Metasploit{}
 	}
 
-	for _, e := range errs.GetErrors() {
-		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module info by CVE", "err", e)
-		}
-	}
 	return ms
 }
 
 // GetModuleByEdbID :
 func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	ms := []models.Metasploit{}
-	var errs gorm.Errors
-
-	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits LEFT JOIN msf_edbs ON metasploits.id = msf_edbs.metasploit_id LEFT JOIN edbs ON msf_edbs.edb_id = edbs.id WHERE edbs.exploit_unique_id = ?", edbID).Scan(&ms).Error)
-	for _, m := range ms {
-		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+	err := r.conn.Preload("References").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		log15.Error("Failed to get module info by EDB-ID", "err", err)
+		return []models.Metasploit{}
 	}
 
-	for _, e := range errs.GetErrors() {
-		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module info by EDB-ID", "err", e)
-		}
-	}
 	return ms
 }
