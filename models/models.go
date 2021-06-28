@@ -1,36 +1,27 @@
 package models
 
-import (
-	"time"
-
-	"github.com/jinzhu/gorm"
-)
-
-// LastUpdated :
-type LastUpdated struct {
-	Date time.Time
-}
-
 // Metasploit : https://www.rapid7.com/db/modules
 type Metasploit struct {
-	gorm.Model  `json:"-" xml:"-"`
+	ID          int64 `json:"-"`
 	Name        string
 	Title       string
 	Description string
 	CveID       string
-	Edbs        []Edb       `json:",omitempty" gorm:"many2many:msf_edbs;"`
-	References  []Reference `json:",omitempty" gorm:"many2many:msf_refs;"`
+	Edbs        []Edb
+	References  []Reference
 }
 
 // Edb has Exploit-ID
 type Edb struct {
-	ID              uint `json:",omitempty"`
+	ID              int64 `json:"-"`
+	MetasploitID    int64
 	ExploitUniqueID string
 }
 
 // Reference is Child model of Metasploit
 // It holds reference information about the CVE
 type Reference struct {
-	ID   uint   `json:",omitempty"`
-	Link string `sql:"type:text"`
+	ID           int64 `json:"-"`
+	MetasploitID int64
+	Link         string `sql:"type:text"`
 }

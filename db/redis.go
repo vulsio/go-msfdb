@@ -73,23 +73,17 @@ func (r *RedisDriver) CloseDB() (err error) {
 	return
 }
 
-// DropDB drop tables
-func (r *RedisDriver) DropDB() error {
-	return nil
-}
-
 // MigrateDB migrates Database
 func (r *RedisDriver) MigrateDB() error {
 	return nil
 }
 
 // InsertMetasploit :
-func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error) {
+func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	ctx := context.Background()
 	log15.Info("Inserting Modules having CVEs...")
 	bar := pb.StartNew(len(records))
 
-	var count int
 	for _, record := range records {
 		pipe := r.conn.Pipeline()
 		bar.Increment()
@@ -102,21 +96,20 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 		if result := pipe.HSet(ctx, cveIDPrefix+record.CveID, record.Name, string(j)); result.Err() != nil {
 			return fmt.Errorf("Failed to HSet CVE. err: %s", result.Err())
 		}
-		count++
 
 		if _, err = pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
 	}
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID Metasploit Count", "count", len(records))
 	bar.Finish()
 	return nil
 }
 
 // GetModuleByCveID :
-func (r *RedisDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
+func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ctx := context.Background()
-	modules := []*models.Metasploit{}
+	modules := []models.Metasploit{}
 	results := r.conn.HGetAll(ctx, cveIDPrefix+cveID)
 	if results.Err() != nil {
 		log15.Error("Failed to get cve.", "err", results.Err())
@@ -128,13 +121,13 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
 			log15.Error("Failed to Unmarshal json.", "err", err)
 			return nil
 		}
-		modules = append(modules, &module)
+		modules = append(modules, module)
 	}
 	return modules
 }
 
 // GetModuleByEdbID :
-func (r *RedisDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
+func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	log15.Error("redis does not correspond to edbid query")
 	return nil
 }

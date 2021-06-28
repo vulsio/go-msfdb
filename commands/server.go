@@ -35,14 +35,11 @@ func init() {
 }
 
 func executeServer(cmd *cobra.Command, args []string) (err error) {
-	var isFetch = false
-
 	logDir := viper.GetString("log-dir")
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
-		isFetch,
 	)
 	if err != nil {
 		if locked {

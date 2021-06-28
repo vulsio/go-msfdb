@@ -35,7 +35,7 @@ type Config struct {
 }
 
 // FetchMetasploitDB :
-func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
+func (c Config) FetchMetasploitDB() (records []models.Metasploit, err error) {
 	// Clone vuln-list repository
 	dir := filepath.Join(utils.CacheDir(), "msfdb-list")
 	updatedFiles, err := c.GitClient.CloneRepo(repoURL, dir)
@@ -78,7 +78,7 @@ func (c Config) FetchMetasploitDB() (records []*models.Metasploit, err error) {
 	return records, nil
 }
 
-func convertToModel(path string, item *Module) (*models.Metasploit, error) {
+func convertToModel(path string, item *Module) (models.Metasploit, error) {
 	// cveID
 	cveID := utils.FileNameWithoutExtension(path)
 
@@ -100,7 +100,7 @@ func convertToModel(path string, item *Module) (*models.Metasploit, error) {
 		refs = append(refs, ref)
 	}
 
-	return &models.Metasploit{
+	return models.Metasploit{
 		Name:        item.Name,
 		Title:       item.Title,
 		Description: item.Description,

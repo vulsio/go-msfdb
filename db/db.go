@@ -3,8 +3,6 @@ package db
 import (
 	"fmt"
 
-	"github.com/inconshreveable/log15"
-
 	"github.com/takuzoo3868/go-msfdb/models"
 )
 
@@ -12,16 +10,15 @@ import (
 type DB interface {
 	Name() string
 	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
-	DropDB() error
 	MigrateDB() error
 	CloseDB() error
-	InsertMetasploit([]*models.Metasploit) error
-	GetModuleByCveID(string) []*models.Metasploit
-	GetModuleByEdbID(string) []*models.Metasploit
+	InsertMetasploit([]models.Metasploit) error
+	GetModuleByCveID(string) []models.Metasploit
+	GetModuleByEdbID(string) []models.Metasploit
 }
 
 // NewDB :
-func NewDB(dbType string, dbPath string, debugSQL bool, isFetch bool) (driver DB, locked bool, err error) {
+func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
 		return driver, false, fmt.Errorf("Failed to new db: %w", err)
 	}
@@ -31,13 +28,6 @@ func NewDB(dbType string, dbPath string, debugSQL bool, isFetch bool) (driver DB
 			return nil, true, err
 		}
 		return nil, false, err
-	}
-
-	if isFetch {
-		log15.Info("Init DB", "db", driver.Name())
-		if err := driver.DropDB(); err != nil {
-			return driver, false, fmt.Errorf("Failed to drop tables: %w", err)
-		}
 	}
 
 	if err := driver.MigrateDB(); err != nil {

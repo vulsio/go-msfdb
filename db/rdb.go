@@ -68,20 +68,6 @@ func (r *RDBDriver) CloseDB() (err error) {
 	return
 }
 
-// DropDB drop tables
-func (r *RDBDriver) DropDB() error {
-	if err := r.conn.DropTableIfExists(
-		&models.Metasploit{},
-		&models.Edb{},
-		&models.Reference{},
-		"msf_edbs",
-		"msf_refs",
-	).Error; err != nil {
-		return fmt.Errorf("Failed to drop. err: %s", err)
-	}
-	return nil
-}
-
 // MigrateDB migrates Database
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
@@ -105,12 +91,12 @@ func (r *RDBDriver) MigrateDB() error {
 }
 
 // InsertMetasploit :
-func (r *RDBDriver) InsertMetasploit(records []*models.Metasploit) (err error) {
+func (r *RDBDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	log15.Info("Inserting Modules having CVEs...")
 	return r.deleteAndInsertMetasploit(r.conn, records)
 }
 
-func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []*models.Metasploit) (err error) {
+func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Metasploit) (err error) {
 	bar := pb.StartNew(len(records))
 	tx := conn.Begin()
 	defer func() {
@@ -136,22 +122,20 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []*models.M
 		}
 	}
 
-	var count int
 	for _, record := range records {
-		if err = tx.Create(record).Error; err != nil {
+		if err = tx.Create(&record).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
-		count++
 		bar.Increment()
 	}
 	bar.Finish()
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID Metasploit Count", "count", len(records))
 	return nil
 }
 
 // GetModuleByCveID :
-func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
-	ms := []*models.Metasploit{}
+func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
+	ms := []models.Metasploit{}
 	var errs gorm.Errors
 
 	errs = errs.Add(r.conn.Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error)
@@ -168,8 +152,8 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
 }
 
 // GetModuleByEdbID :
-func (r *RDBDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
-	ms := []*models.Metasploit{}
+func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
+	ms := []models.Metasploit{}
 	var errs gorm.Errors
 
 	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits LEFT JOIN msf_edbs ON metasploits.id = msf_edbs.metasploit_id LEFT JOIN edbs ON msf_edbs.edb_id = edbs.id WHERE edbs.exploit_unique_id = ?", edbID).Scan(&ms).Error)

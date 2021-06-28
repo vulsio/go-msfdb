@@ -23,13 +23,10 @@ func init() {
 }
 
 func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
-	var isFetch = true
-
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
-		isFetch,
 	)
 	if err != nil {
 		if locked {
@@ -46,7 +43,7 @@ func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
 	fc := fetcher.Config{
 		GitClient: gc,
 	}
-	var records []*models.Metasploit
+	var records []models.Metasploit
 	if records, err = fc.FetchMetasploitDB(); err != nil {
 		log15.Error("Failed to fetch vulsio/msfdb-list", "err", err)
 		return err
