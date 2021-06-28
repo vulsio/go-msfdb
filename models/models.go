@@ -5,7 +5,7 @@ type Metasploit struct {
 	ID          int64 `json:"-"`
 	Name        string
 	Title       string
-	Description string
+	Description string `gorm:"size:16777215"`
 	CveID       string
 	Edbs        []Edb
 	References  []Reference
@@ -23,5 +23,5 @@ type Edb struct {
 type Reference struct {
 	ID           int64 `json:"-"`
 	MetasploitID int64
-	Link         string `sql:"type:text"`
+	Link         string `gorm:"type:text"`
 }
