@@ -5,7 +5,7 @@ type Metasploit struct {
 	ID          int64 `json:"-"`
 	Name        string
 	Title       string
-	Description string `gorm:"size:16777215"`
+	Description string `gorm:"type:text"`
 	CveID       string
 	Edbs        []Edb
 	References  []Reference
