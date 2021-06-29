@@ -94,6 +94,12 @@ func printResults(results []models.Metasploit) error {
 		fmt.Printf("  Name: %s\n", r.Name)
 		fmt.Printf("  Title: %s\n", r.Title)
 		fmt.Printf("  Description: %s\n", r.Description)
+		if 0 < len(r.Edbs) {
+			fmt.Println("\n[-] Edbs")
+			for _, e := range r.Edbs {
+				fmt.Printf("  EDB-ID: %s\n", e.ExploitUniqueID)
+			}
+		}
 		if 0 < len(r.References) {
 			fmt.Println("\n[-] References")
 			for _, u := range r.References {
