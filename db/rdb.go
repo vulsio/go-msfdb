@@ -138,7 +138,7 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 // GetModuleByCveID :
 func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ms := []models.Metasploit{}
-	err := r.conn.Preload("References").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
+	err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		log15.Error("Failed to get module info by CVE", "err", err)
 		return []models.Metasploit{}
