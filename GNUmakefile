@@ -24,8 +24,8 @@ PKGS = $(shell go list ./...)
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
-LDFLAGS := -X 'main.version=$(VERSION)' \
-        -X 'main.revision=$(REVISION)'
+LDFLAGS := -X 'github.com/takuzoo3868/go-msfdb/config.Version=$(VERSION)' \
+	-X 'github.com/takuzoo3868/go-msfdb/config.Revision=$(REVISION)'
 GO := GO111MODULE=on go
 GO_OFF := GO111MODULE=off go
 

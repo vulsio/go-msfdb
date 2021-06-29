@@ -10,6 +10,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
 
+	"github.com/takuzoo3868/go-msfdb/config"
 	"github.com/takuzoo3868/go-msfdb/models"
 )
 
@@ -75,6 +76,21 @@ func (r *RedisDriver) CloseDB() (err error) {
 
 // MigrateDB migrates Database
 func (r *RedisDriver) MigrateDB() error {
+	return nil
+}
+
+// IsGoMsfdbModelV1 determines if the DB was created at the time of go-msfdb Model v1
+func (r *RedisDriver) IsGoMsfdbModelV1() (bool, error) {
+	return false, nil
+}
+
+// GetFetchMeta get FetchMeta from Database
+func (r *RedisDriver) GetFetchMeta() (*models.FetchMeta, error) {
+	return &models.FetchMeta{GoMsfdbRevision: config.Revision, SchemaVersion: models.LatestSchemaVersion}, nil
+}
+
+// UpsertFetchMeta upsert FetchMeta to Database
+func (r *RedisDriver) UpsertFetchMeta(*models.FetchMeta) error {
 	return nil
 }
 

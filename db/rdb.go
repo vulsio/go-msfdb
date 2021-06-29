@@ -19,6 +19,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/takuzoo3868/go-msfdb/config"
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
 )
@@ -105,6 +106,8 @@ func (r *RDBDriver) CloseDB() (err error) {
 // MigrateDB migrates Database
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
+		&models.FetchMeta{},
+
 		&models.Metasploit{},
 		&models.Edb{},
 		&models.Reference{},
@@ -175,6 +178,50 @@ func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	}
 
 	return ms
+}
+
+// IsGoMsfdbModelV1 determines if the DB was created at the time of go-msfdb Model v1
+func (r *RDBDriver) IsGoMsfdbModelV1() (bool, error) {
+	if r.conn.Migrator().HasTable(&models.FetchMeta{}) {
+		return false, nil
+	}
+
+	var (
+		count int64
+		err   error
+	)
+	switch r.name {
+	case dialectSqlite3:
+		err = r.conn.Table("sqlite_master").Where("type = ?", "table").Count(&count).Error
+	case dialectMysql:
+		err = r.conn.Table("information_schema.tables").Where("table_schema = ?", r.conn.Migrator().CurrentDatabase()).Count(&count).Error
+	case dialectPostgreSQL:
+		err = r.conn.Table("pg_tables").Where("schemaname = ?", "public").Count(&count).Error
+	}
+
+	if count > 0 {
+		return true, nil
+	}
+	return false, err
+}
+
+// GetFetchMeta get FetchMeta from Database
+func (r *RDBDriver) GetFetchMeta() (fetchMeta *models.FetchMeta, err error) {
+	if err = r.conn.Take(&fetchMeta).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return &models.FetchMeta{GoMsfdbRevision: config.Revision, SchemaVersion: models.LatestSchemaVersion}, nil
+	}
+
+	return fetchMeta, nil
+}
+
+// UpsertFetchMeta upsert FetchMeta to Database
+func (r *RDBDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
+	fetchMeta.GoMsfdbRevision = config.Revision
+	fetchMeta.SchemaVersion = models.LatestSchemaVersion
+	return r.conn.Save(fetchMeta).Error
 }
 
 // IndexChunk has a starting point and an ending point for Chunk

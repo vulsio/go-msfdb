@@ -3,7 +3,9 @@ package db
 import (
 	"fmt"
 
+	"github.com/inconshreveable/log15"
 	"github.com/takuzoo3868/go-msfdb/models"
+	"golang.org/x/xerrors"
 )
 
 // DB :
@@ -12,6 +14,11 @@ type DB interface {
 	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
 	MigrateDB() error
 	CloseDB() error
+
+	IsGoMsfdbModelV1() (bool, error)
+	GetFetchMeta() (*models.FetchMeta, error)
+	UpsertFetchMeta(*models.FetchMeta) error
+
 	InsertMetasploit([]models.Metasploit) error
 	GetModuleByCveID(string) []models.Metasploit
 	GetModuleByEdbID(string) []models.Metasploit
@@ -28,6 +35,16 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 			return nil, true, err
 		}
 		return nil, false, err
+	}
+
+	isV1, err := driver.IsGoMsfdbModelV1()
+	if err != nil {
+		log15.Error("Failed to IsGoMsfdbModelV1.", "err", err)
+		return nil, false, err
+	}
+	if isV1 {
+		log15.Error("Failed to NewDB. Since SchemaVersion is incompatible, delete Database and fetch again")
+		return nil, false, xerrors.New("Failed to NewDB. Since SchemaVersion is incompatible, delete Database and fetch again.")
 	}
 
 	if err := driver.MigrateDB(); err != nil {

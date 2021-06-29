@@ -1,5 +1,22 @@
 package models
 
+import "gorm.io/gorm"
+
+// LatestSchemaVersion manages the Schema version used in the latest go-msfdb.
+const LatestSchemaVersion = 2
+
+// FetchMeta has meta infomation about fetched security tracker
+type FetchMeta struct {
+	gorm.Model      `json:"-"`
+	GoMsfdbRevision string
+	SchemaVersion   uint
+}
+
+// OutDated checks whether last fetched feed is out dated
+func (f FetchMeta) OutDated() bool {
+	return f.SchemaVersion != LatestSchemaVersion
+}
+
 // Metasploit : https://www.rapid7.com/db/modules
 type Metasploit struct {
 	ID          int64 `json:"-"`
