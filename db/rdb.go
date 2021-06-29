@@ -82,6 +82,7 @@ func (r *RDBDriver) MigrateDB() error {
 	// Metasploits
 	errs = errs.Add(r.conn.Model(&models.Metasploit{}).AddIndex("idx_metasploit_cve_id", "cve_id").Error)
 	errs = errs.Add(r.conn.Model(&models.Reference{}).AddIndex("idx_references_metasploit_id", "metasploit_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_metasploit_id", "metasploit_id").Error)
 	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_exploit_unique_id", "exploit_unique_id").Error)
 
 	for _, e := range errs {
@@ -150,7 +151,7 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 // GetModuleByEdbID :
 func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	ms := []models.Metasploit{}
-	err := r.conn.Preload("References").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
+	err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		log15.Error("Failed to get module info by EDB-ID", "err", err)
 		return []models.Metasploit{}
