@@ -1,23 +1,26 @@
 package db
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/inconshreveable/log15"
-	"github.com/jinzhu/gorm"
 	sqlite3 "github.com/mattn/go-sqlite3"
 	"golang.org/x/xerrors"
 
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"github.com/takuzoo3868/go-msfdb/models"
 	"github.com/takuzoo3868/go-msfdb/utils"
-
-	// Required MySQL.  See http://jinzhu.me/gorm/database.html#connecting-to-a-database
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-
-	// Required SQLite3.
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 const (
@@ -39,7 +42,33 @@ func (r *RDBDriver) Name() string {
 
 // OpenDB opens Database
 func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, err error) {
-	r.conn, err = gorm.Open(dbType, dbPath)
+	gormConfig := gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger:                                   logger.Default.LogMode(logger.Silent),
+	}
+
+	if debugSQL {
+		gormConfig.Logger = logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold: time.Second,
+				LogLevel:      logger.Info,
+				Colorful:      true,
+			},
+		)
+	}
+
+	switch r.name {
+	case dialectSqlite3:
+		r.conn, err = gorm.Open(sqlite.Open(dbPath), &gormConfig)
+	case dialectMysql:
+		r.conn, err = gorm.Open(mysql.Open(dbPath), &gormConfig)
+	case dialectPostgreSQL:
+		r.conn, err = gorm.Open(postgres.Open(dbPath), &gormConfig)
+	default:
+		err = xerrors.Errorf("Not Supported DB dialects. r.name: %s", r.name)
+	}
+
 	if err != nil {
 		msg := fmt.Sprintf("Failed to open DB. dbtype: %s, dbpath: %s, err: %s", dbType, dbPath, err)
 		if r.name == dialectSqlite3 {
@@ -50,7 +79,7 @@ func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, e
 		}
 		return false, fmt.Errorf(msg)
 	}
-	r.conn.LogMode(debugSQL)
+
 	if r.name == dialectSqlite3 {
 		r.conn.Exec("PRAGMA foreign_keys = ON")
 	}
@@ -62,7 +91,12 @@ func (r *RDBDriver) CloseDB() (err error) {
 	if r.conn == nil {
 		return
 	}
-	if err = r.conn.Close(); err != nil {
+
+	var sqlDB *sql.DB
+	if sqlDB, err = r.conn.DB(); err != nil {
+		return xerrors.Errorf("Failed to get DB Object. err : %w", err)
+	}
+	if err = sqlDB.Close(); err != nil {
 		return xerrors.Errorf("Failed to close DB. Type: %s. err: %w", r.name, err)
 	}
 	return
@@ -74,22 +108,10 @@ func (r *RDBDriver) MigrateDB() error {
 		&models.Metasploit{},
 		&models.Edb{},
 		&models.Reference{},
-	).Error; err != nil {
-		return fmt.Errorf("Failed to migrate. err: %s", err)
+	); err != nil {
+		return xerrors.Errorf("Failed to migrate. err: %w", err)
 	}
 
-	var errs gorm.Errors
-	// Metasploits
-	errs = errs.Add(r.conn.Model(&models.Metasploit{}).AddIndex("idx_metasploit_cve_id", "cve_id").Error)
-	errs = errs.Add(r.conn.Model(&models.Reference{}).AddIndex("idx_references_metasploit_id", "metasploit_id").Error)
-	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_metasploit_id", "metasploit_id").Error)
-	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_exploit_unique_id", "exploit_unique_id").Error)
-
-	for _, e := range errs {
-		if e != nil {
-			return fmt.Errorf("Failed to create index. err: %s", e)
-		}
-	}
 	return nil
 }
 
@@ -110,26 +132,21 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 		tx.Commit()
 	}()
 
-	// select old record
-	old := models.Metasploit{}
-	result := tx.Where(&models.Metasploit{}).First(&old)
-	if !result.RecordNotFound() {
-		// Delete all old records
-		var errs gorm.Errors
-		errs = errs.Add(tx.Unscoped().Delete(models.Metasploit{}).Error)
-		errs = errs.Add(tx.Unscoped().Delete(models.Edb{}).Error)
-		errs = errs.Add(tx.Unscoped().Delete(models.Reference{}).Error)
-		errs = utils.DeleteNil(errs)
-		if len(errs.GetErrors()) > 0 {
-			return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())
-		}
+	// Delete all old records
+	var errs utils.Errors
+	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Metasploit{}).Error)
+	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Edb{}).Error)
+	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Reference{}).Error)
+	errs = utils.DeleteNil(errs)
+	if len(errs.GetErrors()) > 0 {
+		return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())
 	}
 
-	for _, record := range records {
-		if err = tx.Create(&record).Error; err != nil {
+	for idx := range chunkSlice(len(records), 50) {
+		if err = tx.Create(records[idx.From:idx.To]).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
-		bar.Increment()
+		bar.Add(idx.To - idx.From)
 	}
 	bar.Finish()
 	log15.Info("CveID Metasploit Count", "count", len(records))
@@ -140,7 +157,7 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ms := []models.Metasploit{}
 	err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
-	if err != nil && !gorm.IsRecordNotFoundError(err) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by CVE", "err", err)
 		return []models.Metasploit{}
 	}
@@ -152,10 +169,33 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	ms := []models.Metasploit{}
 	err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
-	if err != nil && !gorm.IsRecordNotFoundError(err) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by EDB-ID", "err", err)
 		return []models.Metasploit{}
 	}
 
 	return ms
+}
+
+// IndexChunk has a starting point and an ending point for Chunk
+type IndexChunk struct {
+	From, To int
+}
+
+func chunkSlice(length int, chunkSize int) <-chan IndexChunk {
+	ch := make(chan IndexChunk)
+
+	go func() {
+		defer close(ch)
+
+		for i := 0; i < length; i += chunkSize {
+			idx := IndexChunk{i, i + chunkSize}
+			if length < idx.To {
+				idx.To = length
+			}
+			ch <- idx
+		}
+	}()
+
+	return ch
 }
