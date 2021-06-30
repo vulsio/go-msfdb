@@ -15,14 +15,14 @@ import (
 
 /**
 # Redis Data Structure
-- HASH
-  ┌───┬───────────────────────┬────────────┬────────────────┬────────────────────────────────┐
-  │NO │         HASH          │   FIELD    │     VALUE      │            PURPOSE             │
-  └───┴───────────────────────┴────────────┴────────────────┴────────────────────────────────┘
+- SET
+  ┌───┬───────────────────────┬────────────────┬────────────────────────────────┐
+  │NO │          KEY          │     MEMBER     │            PURPOSE             │
+  └───┴───────────────────────┴────────────────┴────────────────────────────────┘
 
-  ┌───┬───────────────────────┬────────────┬────────────────┬────────────────────────────────┐
-  │ 1 │METASPLOIT#C#$CVEID    │$MODULENAME │ $MODULE JSON   │ TO GET MODULE FROM CVEID       │
-  └───┴───────────────────────┴────────────┴────────────────┴────────────────────────────────┘
+  ┌───┬───────────────────────┬────────────────┬────────────────────────────────┐
+  │ 1 │METASPLOIT#C#$CVEID    │ $MODULE JSON   │ TO GET MODULE FROM CVEID       │
+  └───┴───────────────────────┴────────────────┴────────────────────────────────┘
 **/
 
 const (
@@ -99,7 +99,7 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 			return fmt.Errorf("Failed to marshal json. err: %s", err)
 		}
 
-		if result := pipe.HSet(ctx, cveIDPrefix+record.CveID, record.Name, string(j)); result.Err() != nil {
+		if result := pipe.SAdd(ctx, cveIDPrefix+record.CveID, string(j)); result.Err() != nil {
 			return fmt.Errorf("Failed to HSet CVE. err: %s", result.Err())
 		}
 		count++
@@ -117,7 +117,7 @@ func (r *RedisDriver) InsertMetasploit(records []*models.Metasploit) (err error)
 func (r *RedisDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
 	ctx := context.Background()
 	modules := []*models.Metasploit{}
-	results := r.conn.HGetAll(ctx, cveIDPrefix+cveID)
+	results := r.conn.SMembers(ctx, cveIDPrefix+cveID)
 	if results.Err() != nil {
 		log15.Error("Failed to get cve.", "err", results.Err())
 		return nil
