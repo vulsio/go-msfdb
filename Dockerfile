@@ -6,12 +6,12 @@ ENV REPOSITORY github.com/takuzoo3868/go-msfdb
 COPY . $GOPATH/src/$REPOSITORY
 RUN cd $GOPATH/src/$REPOSITORY && make install
 
-FROM alpine:3.11
+FROM alpine:3.14
 
-MAINTAINER takuzoo3868
+LABEL maintainer takuzoo3868
 
-ENV LOGDIR /var/log/vuls
-ENV WORKDIR /vuls
+ENV LOGDIR /var/log/go-msfdb
+ENV WORKDIR /go-msfdb
 
 RUN apk add --no-cache ca-certificates git \
     && mkdir -p $WORKDIR $LOGDIR
