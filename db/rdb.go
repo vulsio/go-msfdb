@@ -68,20 +68,6 @@ func (r *RDBDriver) CloseDB() (err error) {
 	return
 }
 
-// DropDB drop tables
-func (r *RDBDriver) DropDB() error {
-	if err := r.conn.DropTableIfExists(
-		&models.Metasploit{},
-		&models.Edb{},
-		&models.Reference{},
-		"msf_edbs",
-		"msf_refs",
-	).Error; err != nil {
-		return fmt.Errorf("Failed to drop. err: %s", err)
-	}
-	return nil
-}
-
 // MigrateDB migrates Database
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
@@ -95,6 +81,9 @@ func (r *RDBDriver) MigrateDB() error {
 	var errs gorm.Errors
 	// Metasploits
 	errs = errs.Add(r.conn.Model(&models.Metasploit{}).AddIndex("idx_metasploit_cve_id", "cve_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Reference{}).AddIndex("idx_references_metasploit_id", "metasploit_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_metasploit_id", "metasploit_id").Error)
+	errs = errs.Add(r.conn.Model(&models.Edb{}).AddIndex("idx_edbs_exploit_unique_id", "exploit_unique_id").Error)
 
 	for _, e := range errs {
 		if e != nil {
@@ -105,12 +94,12 @@ func (r *RDBDriver) MigrateDB() error {
 }
 
 // InsertMetasploit :
-func (r *RDBDriver) InsertMetasploit(records []*models.Metasploit) (err error) {
+func (r *RDBDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	log15.Info("Inserting Modules having CVEs...")
 	return r.deleteAndInsertMetasploit(r.conn, records)
 }
 
-func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []*models.Metasploit) (err error) {
+func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Metasploit) (err error) {
 	bar := pb.StartNew(len(records))
 	tx := conn.Begin()
 	defer func() {
@@ -136,51 +125,37 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []*models.M
 		}
 	}
 
-	var count int
 	for _, record := range records {
-		if err = tx.Create(record).Error; err != nil {
+		if err = tx.Create(&record).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
-		count++
 		bar.Increment()
 	}
 	bar.Finish()
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID Metasploit Count", "count", len(records))
 	return nil
 }
 
 // GetModuleByCveID :
-func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Metasploit {
-	ms := []*models.Metasploit{}
-	var errs gorm.Errors
-
-	errs = errs.Add(r.conn.Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error)
-	for _, m := range ms {
-		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
+	ms := []models.Metasploit{}
+	err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		log15.Error("Failed to get module info by CVE", "err", err)
+		return []models.Metasploit{}
 	}
 
-	for _, e := range errs.GetErrors() {
-		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module info by CVE", "err", e)
-		}
-	}
 	return ms
 }
 
 // GetModuleByEdbID :
-func (r *RDBDriver) GetModuleByEdbID(edbID string) []*models.Metasploit {
-	ms := []*models.Metasploit{}
-	var errs gorm.Errors
-
-	errs = errs.Add(r.conn.Raw("SELECT * FROM metasploits LEFT JOIN msf_edbs ON metasploits.id = msf_edbs.metasploit_id LEFT JOIN edbs ON msf_edbs.edb_id = edbs.id WHERE edbs.exploit_unique_id = ?", edbID).Scan(&ms).Error)
-	for _, m := range ms {
-		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
+	ms := []models.Metasploit{}
+	err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		log15.Error("Failed to get module info by EDB-ID", "err", err)
+		return []models.Metasploit{}
 	}
 
-	for _, e := range errs.GetErrors() {
-		if !gorm.IsRecordNotFoundError(e) {
-			log15.Error("Failed to get module info by EDB-ID", "err", e)
-		}
-	}
 	return ms
 }

@@ -43,13 +43,10 @@ func init() {
 }
 
 func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
-	var isFetch = false
-
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
-		isFetch,
 	)
 	if err != nil {
 		if locked {
@@ -63,7 +60,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 
 	switch searchType {
 	case "CVE":
-		if !cveIDRegexp.Match([]byte(param)) {
+		if !cveIDRegexp.MatchString(param) {
 			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
 			return errors.New("Invalid CVE Param")
 		}
@@ -87,25 +84,31 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func printResults(results []*models.Metasploit) error {
+func printResults(results []models.Metasploit) error {
 	fmt.Println("")
 	fmt.Println("Results: CVE-Metasploit Record")
 	fmt.Println("---------------------------------------")
-	if len(results) == 0 {
-		return errors.New("No Record Found")
-	}
+
 	for _, r := range results {
 		fmt.Printf("\n[*] CVE: %s\n", r.CveID)
 		fmt.Printf("  Name: %s\n", r.Name)
 		fmt.Printf("  Title: %s\n", r.Title)
 		fmt.Printf("  Description: %s\n", r.Description)
+		if 0 < len(r.Edbs) {
+			fmt.Println("\n[-] Edbs")
+			for _, e := range r.Edbs {
+				fmt.Printf("  EDB-ID: %s\n", e.ExploitUniqueID)
+			}
+		}
 		if 0 < len(r.References) {
 			fmt.Println("\n[-] References")
 			for _, u := range r.References {
 				fmt.Printf("  URL: %s\n", u.Link)
 			}
 		}
-		fmt.Println("\n---------------------------------------")
 	}
+
+	fmt.Println("\n---------------------------------------")
+
 	return nil
 }
