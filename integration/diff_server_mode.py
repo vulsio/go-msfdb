@@ -28,9 +28,9 @@ def diff_response(args: Tuple[str, str]):
     # /edbs/:edb
     try:
         response_old = requests.get(
-            f'http://127.0.0.1:1325/{path}', timeout=(10.0, 10.0)).json()
+            f'http://127.0.0.1:1325/{path}', timeout=(3.0, 10.0)).json()
         response_new = requests.get(
-            f'http://127.0.0.1:1326/{path}', timeout=(10.0, 10.0)).json()
+            f'http://127.0.0.1:1326/{path}', timeout=(3.0, 10.0)).json()
     except requests.ConnectionError as e:
         logger.error(f'Failed to Connection..., err: {e}')
         exit(1)

@@ -19,11 +19,11 @@ func (f FetchMeta) OutDated() bool {
 
 // Metasploit : https://www.rapid7.com/db/modules
 type Metasploit struct {
-	ID          int64 `json:"-"`
-	Name        string
-	Title       string
+	ID          int64  `json:"-"`
+	Name        string `gorm:"type:varchar(255)"`
+	Title       string `gorm:"type:varchar(255)"`
 	Description string `gorm:"type:text"`
-	CveID       string `gorm:"index:idx_metasploit_cve_id"`
+	CveID       string `gorm:"index:idx_metasploit_cve_id;type:varchar(255)"`
 	Edbs        []Edb
 	References  []Reference
 }
@@ -32,7 +32,7 @@ type Metasploit struct {
 type Edb struct {
 	ID              int64  `json:"-"`
 	MetasploitID    int64  `json:"-" gorm:"index:idx_edbs_metasploit_id"`
-	ExploitUniqueID string `gorm:"index:idx_edbs_exploit_unique_id"`
+	ExploitUniqueID string `gorm:"index:idx_edbs_exploit_unique_id;type:varchar(255)"`
 }
 
 // Reference is Child model of Metasploit
