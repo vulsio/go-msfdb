@@ -4,6 +4,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
 
 	"github.com/takuzoo3868/go-msfdb/db"
 	"github.com/takuzoo3868/go-msfdb/fetcher"
@@ -38,6 +39,16 @@ func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
 		_ = driver.CloseDB()
 	}()
 
+	fetchMeta, err := driver.GetFetchMeta()
+	if err != nil {
+		log15.Error("Failed to get FetchMeta from DB.", "err", err)
+		return err
+	}
+	if fetchMeta.OutDated() {
+		log15.Error("Failed to Insert CVEs into DB. SchemaVersion is old", "SchemaVersion", map[string]uint{"latest": models.LatestSchemaVersion, "DB": fetchMeta.SchemaVersion})
+		return xerrors.New("Failed to Insert CVEs into DB. SchemaVersion is old")
+	}
+
 	log15.Info("Fetching vulsio/msfdb-list")
 	gc := &git.Config{}
 	fc := fetcher.Config{
@@ -50,9 +61,14 @@ func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
 	}
 	log15.Info("Metasploit-Framework modules", "count", len(records))
 
-	log15.Info("Insert info into go-msfdbdb.", "db", driver.Name())
+	log15.Info("Insert info into go-msfdb.", "db", driver.Name())
 	if err := driver.InsertMetasploit(records); err != nil {
 		log15.Error("Failed to insert.", "dbpath", viper.GetString("dbpath"), "err", err)
+		return err
+	}
+
+	if err := driver.UpsertFetchMeta(fetchMeta); err != nil {
+		log15.Error("Failed to upsert FetchMeta to DB.", "err", err)
 		return err
 	}
 

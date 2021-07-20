@@ -7,13 +7,8 @@ import (
 	"strings"
 
 	"github.com/takuzoo3868/go-msfdb/commands"
+	"github.com/takuzoo3868/go-msfdb/config"
 )
-
-// Name ... Name
-const Name string = "go-msfdb"
-
-// Version ... Version
-var version = "0.0.1"
 
 func main() {
 	var v = flag.Bool("v", false, "Show version")
@@ -25,7 +20,7 @@ func main() {
 	}
 
 	if *v {
-		fmt.Printf("%s %s \n", Name, version)
+		fmt.Printf("go-msfdb-%s-%s\n", config.Version, config.Revision)
 		os.Exit(0)
 	}
 
