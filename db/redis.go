@@ -117,8 +117,9 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
 	}
-	log15.Info("CveID Metasploit Count", "count", len(records))
 	bar.Finish()
+
+	log15.Info("CveID Metasploit Count", "count", len(records))
 	return nil
 }
 
