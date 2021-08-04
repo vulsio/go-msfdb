@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-redis/redis/v8"
 	"github.com/inconshreveable/log15"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	"github.com/takuzoo3868/go-msfdb/config"
@@ -96,6 +98,8 @@ func (r *RedisDriver) UpsertFetchMeta(*models.FetchMeta) error {
 
 // InsertMetasploit :
 func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) {
+	expire := viper.GetUint("expire")
+
 	ctx := context.Background()
 	log15.Info("Inserting Modules having CVEs...")
 	bar := pb.StartNew(len(records))
@@ -111,6 +115,11 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 
 		if result := pipe.SAdd(ctx, cveIDPrefix+record.CveID, string(j)); result.Err() != nil {
 			return fmt.Errorf("Failed to HSet CVE. err: %s", result.Err())
+		}
+		if expire > 0 {
+			if err := pipe.Expire(ctx, cveIDPrefix+record.CveID, time.Duration(expire*uint(time.Second))).Err(); err != nil {
+				return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
+			}
 		}
 
 		if _, err = pipe.Exec(ctx); err != nil {
