@@ -120,6 +120,10 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			if err := pipe.Expire(ctx, cveIDPrefix+record.CveID, time.Duration(expire*uint(time.Second))).Err(); err != nil {
 				return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
 			}
+		} else {
+			if err := pipe.Persist(ctx, cveIDPrefix+record.CveID).Err(); err != nil {
+				return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
+			}
 		}
 
 		if _, err = pipe.Exec(ctx); err != nil {
