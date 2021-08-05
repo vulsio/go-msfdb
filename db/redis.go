@@ -113,15 +113,16 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			return fmt.Errorf("Failed to marshal json. err: %s", err)
 		}
 
-		if result := pipe.SAdd(ctx, cveIDPrefix+record.CveID, string(j)); result.Err() != nil {
+		key := cveIDPrefix + record.CveID
+		if result := pipe.SAdd(ctx, key, string(j)); result.Err() != nil {
 			return fmt.Errorf("Failed to HSet CVE. err: %s", result.Err())
 		}
 		if expire > 0 {
-			if err := pipe.Expire(ctx, cveIDPrefix+record.CveID, time.Duration(expire*uint(time.Second))).Err(); err != nil {
+			if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
 				return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
 			}
 		} else {
-			if err := pipe.Persist(ctx, cveIDPrefix+record.CveID).Err(); err != nil {
+			if err := pipe.Persist(ctx, key).Err(); err != nil {
 				return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
 			}
 		}
