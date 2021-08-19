@@ -155,38 +155,26 @@ func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 // InsertMetasploit :
 func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	expire := viper.GetUint("expire")
+	batchSize := viper.GetInt("batch-size")
+	if batchSize < 1 {
+		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
+	}
 
 	ctx := context.Background()
 	log15.Info("Inserting Modules having CVEs...")
 	bar := pb.StartNew(len(records))
-
-	for _, record := range records {
+	for idx := range chunkSlice(len(records), batchSize) {
 		pipe := r.conn.Pipeline()
-		bar.Increment()
+		for _, record := range records[idx.From:idx.To] {
 
-		j, err := json.Marshal(record)
-		if err != nil {
-			return fmt.Errorf("Failed to marshal json. err: %s", err)
-		}
-
-		key := cveIDPrefix + record.CveID
-		if result := pipe.SAdd(ctx, key, string(j)); result.Err() != nil {
-			return fmt.Errorf("Failed to SAdd CVE. err: %s", result.Err())
-		}
-		if expire > 0 {
-			if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
-				return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
+			j, err := json.Marshal(record)
+			if err != nil {
+				return fmt.Errorf("Failed to marshal json. err: %s", err)
 			}
-		} else {
-			if err := pipe.Persist(ctx, key).Err(); err != nil {
-				return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
-			}
-		}
 
-		for _, edb := range record.Edbs {
-			key := edbIDPrefix + edb.ExploitUniqueID
-			if result := pipe.SAdd(ctx, key, string(j)); result.Err() != nil {
-				return fmt.Errorf("Failed to SAdd CVE. err: %s", result.Err())
+			key := cveIDPrefix + record.CveID
+			if err := pipe.SAdd(ctx, key, string(j)).Err(); err != nil {
+				return fmt.Errorf("Failed to SAdd CVE. err: %s", err)
 			}
 			if expire > 0 {
 				if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
@@ -197,11 +185,27 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
 				}
 			}
-		}
 
+			for _, edb := range record.Edbs {
+				key := edbIDPrefix + edb.ExploitUniqueID
+				if err := pipe.SAdd(ctx, key, string(j)).Err(); err != nil {
+					return fmt.Errorf("Failed to SAdd CVE. err: %s", err)
+				}
+				if expire > 0 {
+					if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
+						return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
+					}
+				} else {
+					if err := pipe.Persist(ctx, key).Err(); err != nil {
+						return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
+					}
+				}
+			}
+		}
 		if _, err = pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
+		bar.Add(idx.To - idx.From)
 	}
 	bar.Finish()
 

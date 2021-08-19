@@ -11,6 +11,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/inconshreveable/log15"
 	sqlite3 "github.com/mattn/go-sqlite3"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	"gorm.io/driver/mysql"
@@ -150,7 +151,12 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 		return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())
 	}
 
-	for idx := range chunkSlice(len(records), 50) {
+	batchSize := viper.GetInt("batch-size")
+	if batchSize < 1 {
+		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
+	}
+
+	for idx := range chunkSlice(len(records), batchSize) {
 		if err = tx.Create(records[idx.From:idx.To]).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
