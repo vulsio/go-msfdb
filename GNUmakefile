@@ -94,22 +94,22 @@ fetch-redis:
 diff-server-rdb:
 	integration/go-msfdb.old server --dbpath=integration/go-msfdb.old.sqlite3 --port 1325 > /dev/null 2>&1 & 
 	integration/go-msfdb.new server --dbpath=integration/go-msfdb.new.sqlite3 --port 1326 > /dev/null 2>&1 &
-	@ python integration/diff_server_mode.py cves
-	@ python integration/diff_server_mode.py edbs
+	@ python integration/diff_server_mode.py cves --sample_rate 0.01
+	@ python integration/diff_server_mode.py edbs --sample_rate 0.01
 	pkill go-msfdb.old 
 	pkill go-msfdb.new
 
 diff-server-redis:
 	integration/go-msfdb.old server --dbtype redis --dbpath "redis://127.0.0.1:6379/0" --port 1325 > /dev/null 2>&1 & 
 	integration/go-msfdb.new server --dbtype redis --dbpath "redis://127.0.0.1:6380/0" --port 1326 > /dev/null 2>&1 &
-	@ python integration/diff_server_mode.py cves
-	@ python integration/diff_server_mode.py edbs
+	@ python integration/diff_server_mode.py cves --sample_rate 0.01
+	@ python integration/diff_server_mode.py edbs --sample_rate 0.01
 	pkill go-msfdb.old 
 	pkill go-msfdb.new
 
 diff-server-rdb-redis:
 	integration/go-msfdb.new server --dbpath=integration/go-msfdb.new.sqlite3 --port 1325 > /dev/null 2>&1 &
 	integration/go-msfdb.new server --dbtype redis --dbpath "redis://127.0.0.1:6380/0" --port 1326 > /dev/null 2>&1 &
-	@ python integration/diff_server_mode.py cves
-	@ python integration/diff_server_mode.py edbs
+	@ python integration/diff_server_mode.py cves --sample_rate 0.01
+	@ python integration/diff_server_mode.py edbs --sample_rate 0.01
 	pkill go-msfdb.new
