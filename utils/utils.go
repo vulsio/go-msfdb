@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -12,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/inconshreveable/log15"
-	"github.com/k0kubun/pp"
 	"golang.org/x/xerrors"
 )
 
@@ -111,7 +109,7 @@ func GetDefaultLogDir() string {
 }
 
 // SetLogger :
-func SetLogger(logDir string, quiet, debug, logJSON bool) {
+func SetLogger(logToFile bool, logDir string, debug, logJSON bool) error {
 	stderrHandler := log15.StderrHandler
 	logFormat := log15.LogfmtFormat()
 	if logJSON {
@@ -123,32 +121,32 @@ func SetLogger(logDir string, quiet, debug, logJSON bool) {
 	if debug {
 		lvlHandler = log15.LvlFilterHandler(log15.LvlDebug, stderrHandler)
 	}
-	if quiet {
-		lvlHandler = log15.LvlFilterHandler(log15.LvlDebug, log15.DiscardHandler())
-		pp.SetDefaultOutput(ioutil.Discard)
-	}
 
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		if err := os.Mkdir(logDir, 0700); err != nil {
-			log15.Error("Failed to create log directory", "err", err)
-		}
-	}
 	var handler log15.Handler
-	if _, err := os.Stat(logDir); err == nil {
+	if logToFile {
+		if _, err := os.Stat(logDir); err != nil {
+			if os.IsNotExist(err) {
+				if err := os.Mkdir(logDir, 0700); err != nil {
+					return xerrors.Errorf("Failed to create log directory. err: %w", err)
+				}
+			} else {
+				return xerrors.Errorf("Failed to check log directory. err: %w", err)
+			}
+		}
+
 		logPath := filepath.Join(logDir, "go-msfdb.log")
 		if _, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err != nil {
-			log15.Error("Failed to create a log file", "err", err)
-			handler = lvlHandler
-		} else {
-			handler = log15.MultiHandler(
-				log15.Must.FileHandler(logPath, logFormat),
-				lvlHandler,
-			)
+			return xerrors.Errorf("Failed to open a log file. err: %w", err)
 		}
+		handler = log15.MultiHandler(
+			log15.Must.FileHandler(logPath, logFormat),
+			lvlHandler,
+		)
 	} else {
 		handler = lvlHandler
 	}
 	log15.Root().SetHandler(handler)
+	return nil
 }
 
 // DeleteNil :
