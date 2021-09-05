@@ -2,9 +2,12 @@ package db
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
@@ -19,32 +22,42 @@ import (
 
 /**
 # Redis Data Structure
+- Strings
+  ┌───┬───────────────────────┬────────────────┬──────────────────────────────────────────────────┐
+  │NO │          KEY          │     MEMBER     │                    PURPOSE                       │
+  └───┴───────────────────────┴────────────────┴──────────────────────────────────────────────────┘
+  ┌───┬───────────────────────┬────────────────┬──────────────────────────────────────────────────┐
+  │ 1 │ METASPLOIT#DEP        │      JSON      │ TO DELETE OUTDATED AND UNNEEDED FIELD AND MEMBER │
+  └───┴───────────────────────┴────────────────┴──────────────────────────────────────────────────┘
+
 - SET
-  ┌───┬───────────────────────┬────────────────┬────────────────────────────────┐
-  │NO │          KEY          │     MEMBER     │            PURPOSE             │
-  └───┴───────────────────────┴────────────────┴────────────────────────────────┘
-  ┌───┬───────────────────────┬────────────────┬────────────────────────────────┐
-  │ 1 │ METASPLOIT#C#$CVEID   │ $MODULE JSON   │ TO GET MODULE FROM CVEID       │
-  ├───┼───────────────────────┼────────────────┼────────────────────────────────┤
-  | 2 | METASPLOIT#E#$EDBID   | $MODULE JSON   | TO GET MODULE FROM EDBID       |
-  └───┴───────────────────────┴────────────────┴────────────────────────────────┘
+  ┌───┬───────────────────────┬────────┬────────────────────────────────┐
+  │NO │          KEY          │ MEMBER │            PURPOSE             │
+  └───┴───────────────────────┴────────┴────────────────────────────────┘
+  ┌───┬───────────────────────┬────────┬────────────────────────────────┐
+  | 1 | METASPLOIT#E#$EDBID   | $CVEID | TO GET MODULE FROM EDBID       |
+  └───┴───────────────────────┴────────┴────────────────────────────────┘
 
 - Hash
-  ┌───┬──────────────────────┬───────────────┬────────┬──────────────────────────────┐
-  │NO │         KEY          │   FIELD       │  VALUE │           PURPOSE            │
-  └───┴──────────────────────┴───────────────┴────────┴──────────────────────────────┘
-  ┌──────────────────────────┬───────────────┬────────┬──────────────────────────────┐
-  │ 1 │ METASPLOIT#FETCHMETA │   Revision    │ string │ GET Go-Msfdb Binary Revision │
-  ├───┼──────────────────────┼───────────────┼────────┼──────────────────────────────┤
-  │ 2 │ METASPLOIT#FETCHMETA │ SchemaVersion │  uint  │ GET Go-Msfdb Schema Version  │
-  └───┴──────────────────────┴───────────────┴────────┴──────────────────────────────┘
+  ┌───┬──────────────────────┬───────────────┬──────────────┬──────────────────────────────┐
+  │NO │         KEY          │   FIELD       │     VALUE    │           PURPOSE            │
+  └───┴──────────────────────┴───────────────┴──────────────┴──────────────────────────────┘
+  ┌───┬──────────────────────┬───────────────┬──────────────┬──────────────────────────────┐
+  │ 1 │ METASPLOIT#C#$CVEID  │    MD5SUM     │ $MODULE JSON │ TO GET MODULE FROM CVEID     │
+  ├───┼──────────────────────┼───────────────┼──────────────┼──────────────────────────────┤
+  │ 2 │ METASPLOIT#FETCHMETA │   Revision    │    string    │ GET Go-Msfdb Binary Revision │
+  ├───┼──────────────────────┼───────────────┼──────────────┼──────────────────────────────┤
+  │ 3 │ METASPLOIT#FETCHMETA │ SchemaVersion │     uint     │ GET Go-Msfdb Schema Version  │
+  └───┴──────────────────────┴───────────────┴──────────────┴──────────────────────────────┘
 **/
 
 const (
-	dialectRedis = "redis"
-	cveIDPrefix  = "METASPLOIT#C#"
-	edbIDPrefix  = "METASPLOIT#E#"
-	fetchMetaKey = "METASPLOIT#FETCHMETA"
+	dialectRedis         = "redis"
+	cveIDKeyFormat       = "METASPLOIT#C#%s"
+	edbIDKeyFormat       = "METASPLOIT#E#%s"
+	edbIDKeyMemberFormat = "%s#%s"
+	depKey               = "METASPLOIT#DEP"
+	fetchMetaKey         = "METASPLOIT#FETCHMETA"
 )
 
 // RedisDriver is Driver for Redis
@@ -152,27 +165,40 @@ func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 
 // InsertMetasploit :
 func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) {
+	ctx := context.Background()
 	expire := viper.GetUint("expire")
 	batchSize := viper.GetInt("batch-size")
 	if batchSize < 1 {
 		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
 	}
 
-	ctx := context.Background()
+	newDeps := map[string]map[string]struct{}{}
+	oldDepsStr, err := r.conn.Get(ctx, depKey).Result()
+	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			return fmt.Errorf("Failed to Get key: %s. err: %s", depKey, err)
+		}
+		oldDepsStr = "{}"
+	}
+	var oldDeps map[string]map[string]struct{}
+	if err := json.Unmarshal([]byte(oldDepsStr), &oldDeps); err != nil {
+		return fmt.Errorf("Failed to unmarshal JSON. err: %s", err)
+	}
+
 	log15.Info("Inserting Modules having CVEs...")
 	bar := pb.StartNew(len(records))
 	for idx := range chunkSlice(len(records), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, record := range records[idx.From:idx.To] {
-
 			j, err := json.Marshal(record)
 			if err != nil {
 				return fmt.Errorf("Failed to marshal json. err: %s", err)
 			}
 
-			key := cveIDPrefix + record.CveID
-			if err := pipe.SAdd(ctx, key, string(j)).Err(); err != nil {
-				return fmt.Errorf("Failed to SAdd CVE. err: %s", err)
+			hash := fmt.Sprintf("%x", md5.Sum(j))
+			key := fmt.Sprintf(cveIDKeyFormat, record.CveID)
+			if err := pipe.HSet(ctx, key, hash, string(j)).Err(); err != nil {
+				return fmt.Errorf("Failed to HSet CVE. err: %s", err)
 			}
 			if expire > 0 {
 				if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
@@ -184,19 +210,38 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 				}
 			}
 
-			for _, edb := range record.Edbs {
-				key := edbIDPrefix + edb.ExploitUniqueID
-				if err := pipe.SAdd(ctx, key, string(j)).Err(); err != nil {
-					return fmt.Errorf("Failed to SAdd CVE. err: %s", err)
+			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
+			if len(record.Edbs) > 0 {
+				if _, ok := newDeps[member]; !ok {
+					newDeps[member] = map[string]struct{}{}
 				}
-				if expire > 0 {
-					if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
-						return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
+
+				for _, edb := range record.Edbs {
+					key := fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID)
+					if err := pipe.SAdd(ctx, key, member).Err(); err != nil {
+						return fmt.Errorf("Failed to SAdd CVE. err: %s", err)
 					}
-				} else {
-					if err := pipe.Persist(ctx, key).Err(); err != nil {
-						return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
+					if expire > 0 {
+						if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
+							return fmt.Errorf("Failed to set Expire to Key. err: %s", err)
+						}
+					} else {
+						if err := pipe.Persist(ctx, key).Err(); err != nil {
+							return fmt.Errorf("Failed to remove the existing timeout on Key. err: %s", err)
+						}
 					}
+
+					newDeps[member][edb.ExploitUniqueID] = struct{}{}
+					if _, ok := oldDeps[member]; ok {
+						delete(oldDeps[member], edb.ExploitUniqueID)
+					}
+				}
+			} else {
+				if _, ok := newDeps[member]; !ok {
+					newDeps[member] = map[string]struct{}{"": {}}
+				}
+				if _, ok := oldDeps[member]; ok {
+					delete(oldDeps[member], "")
 				}
 			}
 		}
@@ -205,6 +250,41 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		}
 		bar.Add(idx.To - idx.From)
 	}
+
+	pipe := r.conn.Pipeline()
+
+	for member, edbs := range oldDeps {
+		ss := strings.Split(member, "#")
+		if len(ss) != 2 {
+			return fmt.Errorf("Faild to parse oldDeps member: %s. err: invalid format", member)
+		}
+		cveID := ss[0]
+		hash := ss[1]
+
+		for edb := range edbs {
+			if edb != "" {
+				if err := pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), member).Err(); err != nil {
+					return fmt.Errorf("Failed to SRem. err: %s", err)
+				}
+			}
+			if err := pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash).Err(); err != nil {
+				return fmt.Errorf("Failed to HDel. err: %s", err)
+			}
+		}
+	}
+
+	newDepsJSON, err := json.Marshal(newDeps)
+	if err != nil {
+		return fmt.Errorf("Failed to Marshal JSON. err: %s", err)
+	}
+	if err := pipe.Set(ctx, depKey, string(newDepsJSON), time.Duration(expire*uint(time.Second))).Err(); err != nil {
+		return fmt.Errorf("Failed to Set depkey. err: %s", err)
+	}
+
+	if _, err = pipe.Exec(ctx); err != nil {
+		return fmt.Errorf("Failed to exec pipeline. err: %s", err)
+	}
+
 	bar.Finish()
 
 	log15.Info("CveID Metasploit Count", "count", len(records))
@@ -215,9 +295,10 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ctx := context.Background()
 	modules := []models.Metasploit{}
-	metasploits, err := r.conn.SMembers(ctx, cveIDPrefix+cveID).Result()
+
+	metasploits, err := r.conn.HGetAll(ctx, fmt.Sprintf(cveIDKeyFormat, cveID)).Result()
 	if err != nil {
-		log15.Error("Failed to get metasploit.", "err", err)
+		log15.Error("Failed to get metasploit by CVEID.", "err", err)
 		return nil
 	}
 	for _, metasploit := range metasploits {
@@ -235,19 +316,19 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	ctx := context.Background()
 	modules := []models.Metasploit{}
-	metasploits, err := r.conn.SMembers(ctx, edbIDPrefix+edbID).Result()
+	cveIDs, err := r.conn.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID)).Result()
 	if err != nil {
-		log15.Error("Failed to get metasploit.", "err", err)
+		log15.Error("Failed to get metasploit by EDBID.", "err", err)
 		return nil
 	}
 
-	for _, metasploit := range metasploits {
-		var module models.Metasploit
-		if err := json.Unmarshal([]byte(metasploit), &module); err != nil {
-			log15.Error("Failed to Unmarshal json.", "err", err)
+	for _, cveID := range cveIDs {
+		result := r.GetModuleByCveID(cveID)
+		if result == nil {
+			log15.Error("Failed to GetModuleByCveID.")
 			return nil
 		}
-		modules = append(modules, module)
+		modules = append(modules, result...)
 	}
 	return modules
 }
