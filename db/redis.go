@@ -250,9 +250,9 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		}
 		bar.Add(idx.To - idx.From)
 	}
+	bar.Finish()
 
 	pipe := r.conn.Pipeline()
-
 	for member, edbs := range oldDeps {
 		ss := strings.Split(member, "#")
 		if len(ss) != 2 {
@@ -272,7 +272,6 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			}
 		}
 	}
-
 	newDepsJSON, err := json.Marshal(newDeps)
 	if err != nil {
 		return fmt.Errorf("Failed to Marshal JSON. err: %s", err)
@@ -280,12 +279,9 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	if err := pipe.Set(ctx, depKey, string(newDepsJSON), time.Duration(expire*uint(time.Second))).Err(); err != nil {
 		return fmt.Errorf("Failed to Set depkey. err: %s", err)
 	}
-
 	if _, err = pipe.Exec(ctx); err != nil {
 		return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 	}
-
-	bar.Finish()
 
 	log15.Info("CveID Metasploit Count", "count", len(records))
 	return nil
