@@ -31,12 +31,12 @@ import (
   └───┴───────────────────────┴────────────────┴──────────────────────────────────────────────────┘
 
 - SET
-  ┌───┬───────────────────────┬────────┬────────────────────────────────┐
-  │NO │          KEY          │ MEMBER │            PURPOSE             │
-  └───┴───────────────────────┴────────┴────────────────────────────────┘
-  ┌───┬───────────────────────┬────────┬────────────────────────────────┐
-  | 1 | METASPLOIT#E#$EDBID   | $CVEID | TO GET MODULE FROM EDBID       |
-  └───┴───────────────────────┴────────┴────────────────────────────────┘
+  ┌───┬───────────────────────┬───────────────┬────────────────────────────────┐
+  │NO │          KEY          │    MEMBER     │            PURPOSE             │
+  └───┴───────────────────────┴───────────────┴────────────────────────────────┘
+  ┌───┬───────────────────────┬───────────────┬────────────────────────────────┐
+  | 1 | METASPLOIT#E#$EDBID   | $CVEID#MD5SUM | TO GET MODULE FROM EDBID       |
+  └───┴───────────────────────┴───────────────┴────────────────────────────────┘
 
 - Hash
   ┌───┬──────────────────────┬───────────────┬──────────────┬──────────────────────────────┐
@@ -315,20 +315,44 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 // GetModuleByEdbID :
 func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	ctx := context.Background()
-	modules := []models.Metasploit{}
-	cveIDs, err := r.conn.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID)).Result()
+	members, err := r.conn.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID)).Result()
 	if err != nil {
 		log15.Error("Failed to get metasploit by EDBID.", "err", err)
 		return nil
 	}
 
-	for _, cveID := range cveIDs {
-		result := r.GetModuleByCveID(cveID)
-		if result == nil {
-			log15.Error("Failed to GetModuleByCveID.")
+	pipe := r.conn.Pipeline()
+	for _, member := range members {
+		ss := strings.Split(member, "#")
+		if len(ss) != 2 {
+			log15.Error("Failed to parse member.", "err", "invalid format")
 			return nil
 		}
-		modules = append(modules, result...)
+		cveID := ss[0]
+		hash := ss[1]
+		_ = pipe.HGet(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash)
+	}
+	cmders, err := pipe.Exec(ctx)
+	if err != nil {
+		log15.Error("Failed to exec pipeline.", "err", err)
+		return nil
+	}
+
+	modules := []models.Metasploit{}
+	for _, cmder := range cmders {
+		str, err := cmder.(*redis.StringCmd).Result()
+		if err != nil {
+			log15.Error("Failed to HGet.", "err", err)
+			return nil
+		}
+
+		var module models.Metasploit
+		if err := json.Unmarshal([]byte(str), &module); err != nil {
+			log15.Error("Failed to Unmarshal json.", "err", err)
+			return nil
+		}
+
+		modules = append(modules, module)
 	}
 	return modules
 }
