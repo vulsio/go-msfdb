@@ -233,16 +233,15 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					newDeps[member][edb.ExploitUniqueID] = struct{}{}
 					if _, ok := oldDeps[member]; ok {
 						delete(oldDeps[member], edb.ExploitUniqueID)
+						if len(oldDeps[member]) == 0 {
+							delete(oldDeps, member)
+						}
 					}
 				}
 			} else {
 				newDeps[member][""] = struct{}{}
 				if _, ok := oldDeps[member]; ok {
 					delete(oldDeps[member], "")
-				}
-			}
-			if _, ok := oldDeps[member]; ok {
-				if len(oldDeps[member]) == 0 {
 					delete(oldDeps, member)
 				}
 			}
