@@ -172,7 +172,8 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
 	}
 
-	newDeps := map[string]map[string]struct{}{}
+	// newDeps, oldDeps: {"CVEID": {"HashSum(CVEJSON)": {ExploitUniqueID: {}}}}
+	newDeps := map[string]map[string]map[string]struct{}{}
 	oldDepsStr, err := r.conn.Get(ctx, depKey).Result()
 	if err != nil {
 		if !errors.Is(err, redis.Nil) {
@@ -180,7 +181,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		}
 		oldDepsStr = "{}"
 	}
-	var oldDeps map[string]map[string]struct{}
+	var oldDeps map[string]map[string]map[string]struct{}
 	if err := json.Unmarshal([]byte(oldDepsStr), &oldDeps); err != nil {
 		return fmt.Errorf("Failed to unmarshal JSON. err: %s", err)
 	}
@@ -210,10 +211,14 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 				}
 			}
 
-			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
-			if _, ok := newDeps[member]; !ok {
-				newDeps[member] = map[string]struct{}{}
+			if _, ok := newDeps[record.CveID]; !ok {
+				newDeps[record.CveID] = map[string]map[string]struct{}{}
 			}
+			if _, ok := newDeps[record.CveID][hash]; !ok {
+				newDeps[record.CveID][hash] = map[string]struct{}{}
+			}
+
+			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
 			if len(record.Edbs) > 0 {
 				for _, edb := range record.Edbs {
 					key := fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID)
@@ -230,19 +235,29 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 						}
 					}
 
-					newDeps[member][edb.ExploitUniqueID] = struct{}{}
-					if _, ok := oldDeps[member]; ok {
-						delete(oldDeps[member], edb.ExploitUniqueID)
-						if len(oldDeps[member]) == 0 {
-							delete(oldDeps, member)
+					newDeps[record.CveID][hash][edb.ExploitUniqueID] = struct{}{}
+					if _, ok := oldDeps[record.CveID]; ok {
+						if _, ok := oldDeps[record.CveID][hash]; ok {
+							delete(oldDeps[record.CveID][hash], edb.ExploitUniqueID)
+							if len(oldDeps[record.CveID][hash]) == 0 {
+								delete(oldDeps[record.CveID], hash)
+							}
+						}
+						if len(oldDeps[record.CveID]) == 0 {
+							delete(oldDeps, record.CveID)
 						}
 					}
 				}
 			} else {
-				newDeps[member][""] = struct{}{}
-				if _, ok := oldDeps[member]; ok {
-					delete(oldDeps[member], "")
-					delete(oldDeps, member)
+				newDeps[record.CveID][hash][""] = struct{}{}
+				if _, ok := oldDeps[record.CveID]; ok {
+					if _, ok := oldDeps[record.CveID][hash]; ok {
+						delete(oldDeps[record.CveID][hash], "")
+						delete(oldDeps[record.CveID], hash)
+					}
+					if len(oldDeps[record.CveID]) == 0 {
+						delete(oldDeps, record.CveID)
+					}
 				}
 			}
 		}
@@ -254,18 +269,13 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	bar.Finish()
 
 	pipe := r.conn.Pipeline()
-	for member, edbs := range oldDeps {
-		ss := strings.Split(member, "#")
-		if len(ss) != 2 {
-			return fmt.Errorf("Faild to parse oldDeps member: %s. err: invalid format", member)
-		}
-		cveID := ss[0]
-		hash := ss[1]
-
-		for edb := range edbs {
-			if edb != "" {
-				if err := pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), member).Err(); err != nil {
-					return fmt.Errorf("Failed to SRem. err: %s", err)
+	for cveID, hashes := range oldDeps {
+		for hash, edbs := range hashes {
+			for edb := range edbs {
+				if edb != "" {
+					if err := pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), fmt.Sprintf(edbIDKeyMemberFormat, cveID, hash)).Err(); err != nil {
+						return fmt.Errorf("Failed to SRem. err: %s", err)
+					}
 				}
 			}
 			if err := pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash).Err(); err != nil {
