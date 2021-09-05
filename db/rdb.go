@@ -127,12 +127,12 @@ func (r *RDBDriver) MigrateDB() error {
 // InsertMetasploit :
 func (r *RDBDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	log15.Info("Inserting Modules having CVEs...")
-	return r.deleteAndInsertMetasploit(r.conn, records)
+	return r.deleteAndInsertMetasploit(records)
 }
 
-func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Metasploit) (err error) {
+func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err error) {
 	bar := pb.StartNew(len(records))
-	tx := conn.Begin()
+	tx := r.conn.Begin()
 	defer func() {
 		if err != nil {
 			tx.Rollback()
