@@ -241,6 +241,11 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					delete(oldDeps[member], "")
 				}
 			}
+			if _, ok := oldDeps[member]; ok {
+				if len(oldDeps[member]) == 0 {
+					delete(oldDeps, member)
+				}
+			}
 		}
 		if _, err = pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
