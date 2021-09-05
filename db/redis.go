@@ -211,11 +211,10 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			}
 
 			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
+			if _, ok := newDeps[member]; !ok {
+				newDeps[member] = map[string]struct{}{}
+			}
 			if len(record.Edbs) > 0 {
-				if _, ok := newDeps[member]; !ok {
-					newDeps[member] = map[string]struct{}{}
-				}
-
 				for _, edb := range record.Edbs {
 					key := fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID)
 					if err := pipe.SAdd(ctx, key, member).Err(); err != nil {
@@ -237,9 +236,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					}
 				}
 			} else {
-				if _, ok := newDeps[member]; !ok {
-					newDeps[member] = map[string]struct{}{"": {}}
-				}
+				newDeps[member][""] = struct{}{}
 				if _, ok := oldDeps[member]; ok {
 					delete(oldDeps[member], "")
 				}
