@@ -172,7 +172,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
 	}
 
-	// newDeps, oldDeps: {"CVEID": {"HashSum(CVEJSON)": {ExploitUniqueID: {}}}}
+	// newDeps, oldDeps: {"CVEID": {"HashSum(CVEJSON)": {"ExploitUniqueID": {}}}}
 	newDeps := map[string]map[string]map[string]struct{}{}
 	oldDepsStr, err := r.conn.Get(ctx, depKey).Result()
 	if err != nil {
