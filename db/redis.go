@@ -243,9 +243,6 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 								delete(oldDeps[record.CveID], hash)
 							}
 						}
-						if len(oldDeps[record.CveID]) == 0 {
-							delete(oldDeps, record.CveID)
-						}
 					}
 				}
 			} else {
@@ -255,9 +252,11 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 						delete(oldDeps[record.CveID][hash], "")
 						delete(oldDeps[record.CveID], hash)
 					}
-					if len(oldDeps[record.CveID]) == 0 {
-						delete(oldDeps, record.CveID)
-					}
+				}
+			}
+			if _, ok := oldDeps[record.CveID]; ok {
+				if len(oldDeps[record.CveID]) == 0 {
+					delete(oldDeps, record.CveID)
 				}
 			}
 		}
