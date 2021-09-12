@@ -300,13 +300,17 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 // GetModuleByCveID :
 func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ctx := context.Background()
-	modules := []models.Metasploit{}
 
 	metasploits, err := r.conn.HGetAll(ctx, fmt.Sprintf(cveIDKeyFormat, cveID)).Result()
 	if err != nil {
 		log15.Error("Failed to get metasploit by CVEID.", "err", err)
 		return nil
 	}
+	if len(metasploits) == 0 {
+		return []models.Metasploit{}
+	}
+
+	modules := []models.Metasploit{}
 	for _, metasploit := range metasploits {
 		var module models.Metasploit
 		if err := json.Unmarshal([]byte(metasploit), &module); err != nil {
@@ -325,6 +329,9 @@ func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	if err != nil {
 		log15.Error("Failed to get metasploit by EDBID.", "err", err)
 		return nil
+	}
+	if len(members) == 0 {
+		return []models.Metasploit{}
 	}
 
 	pipe := r.conn.Pipeline()
