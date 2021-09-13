@@ -24,4 +24,3 @@ cache
 .DS_Store
 .vscode
 vendor
-integration/diff
