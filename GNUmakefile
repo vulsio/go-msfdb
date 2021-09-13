@@ -77,6 +77,7 @@ clean-integration:
 	-pkill go-msfdb.old
 	-pkill go-msfdb.new
 	-rm integration/go-msfdb.old integration/go-msfdb.new integration/go-msfdb.old.sqlite3 integration/go-msfdb.new.sqlite3
+	-rm -rf integration/diff
 	-docker kill redis-old redis-new
 	-docker rm redis-old redis-new
 
