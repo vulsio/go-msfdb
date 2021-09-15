@@ -8,9 +8,11 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
 
 	"github.com/takuzoo3868/go-msfdb/db"
 	"github.com/takuzoo3868/go-msfdb/models"
+	"github.com/takuzoo3868/go-msfdb/utils"
 )
 
 var (
@@ -29,20 +31,22 @@ var searchCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(searchCmd)
 
-	searchCmd.PersistentFlags().String("type", "", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)")
+	searchCmd.PersistentFlags().String("type", "CVE", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB")
 	if err := viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type")); err != nil {
 		panic(err)
 	}
-	viper.SetDefault("type", "CVE")
 
-	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)")
+	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]")
 	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
 		panic(err)
 	}
-	viper.SetDefault("param", "")
 }
 
 func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
+	if err := utils.SetLogger(viper.GetBool("log-to-file"), viper.GetString("log-dir"), viper.GetBool("debug"), viper.GetBool("log-json")); err != nil {
+		return xerrors.Errorf("Failed to SetLogger. err: %w", err)
+	}
+
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),

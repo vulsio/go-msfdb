@@ -10,6 +10,7 @@ import (
 	"github.com/takuzoo3868/go-msfdb/fetcher"
 	"github.com/takuzoo3868/go-msfdb/git"
 	"github.com/takuzoo3868/go-msfdb/models"
+	"github.com/takuzoo3868/go-msfdb/utils"
 )
 
 var fetchMetasploitDBCmd = &cobra.Command{
@@ -24,6 +25,10 @@ func init() {
 }
 
 func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
+	if err := utils.SetLogger(viper.GetBool("log-to-file"), viper.GetString("log-dir"), viper.GetBool("debug"), viper.GetBool("log-json")); err != nil {
+		return xerrors.Errorf("Failed to SetLogger. err: %w", err)
+	}
+
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),

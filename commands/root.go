@@ -103,9 +103,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	logDir := viper.GetString("log-dir")
-	quiet := viper.GetBool("quiet")
-	debug := viper.GetBool("debug")
-	logJSON := viper.GetBool("log-json")
-	utils.SetLogger(logDir, quiet, debug, logJSON)
 }

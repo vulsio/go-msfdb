@@ -11,6 +11,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/inconshreveable/log15"
 	sqlite3 "github.com/mattn/go-sqlite3"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	"gorm.io/driver/mysql"
@@ -45,12 +46,17 @@ func (r *RDBDriver) Name() string {
 func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, err error) {
 	gormConfig := gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   logger.Default.LogMode(logger.Silent),
+		Logger: logger.New(
+			log.New(os.Stderr, "\r\n", log.LstdFlags),
+			logger.Config{
+				LogLevel: logger.Silent,
+			},
+		),
 	}
 
 	if debugSQL {
 		gormConfig.Logger = logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			log.New(os.Stderr, "\r\n", log.LstdFlags),
 			logger.Config{
 				SlowThreshold: time.Second,
 				LogLevel:      logger.Info,
@@ -121,12 +127,12 @@ func (r *RDBDriver) MigrateDB() error {
 // InsertMetasploit :
 func (r *RDBDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	log15.Info("Inserting Modules having CVEs...")
-	return r.deleteAndInsertMetasploit(r.conn, records)
+	return r.deleteAndInsertMetasploit(records)
 }
 
-func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Metasploit) (err error) {
+func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err error) {
 	bar := pb.StartNew(len(records))
-	tx := conn.Begin()
+	tx := r.conn.Begin()
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -145,7 +151,12 @@ func (r *RDBDriver) deleteAndInsertMetasploit(conn *gorm.DB, records []models.Me
 		return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())
 	}
 
-	for idx := range chunkSlice(len(records), 50) {
+	batchSize := viper.GetInt("batch-size")
+	if batchSize < 1 {
+		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
+	}
+
+	for idx := range chunkSlice(len(records), batchSize) {
 		if err = tx.Create(records[idx.From:idx.To]).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
@@ -222,27 +233,4 @@ func (r *RDBDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 	fetchMeta.GoMsfdbRevision = config.Revision
 	fetchMeta.SchemaVersion = models.LatestSchemaVersion
 	return r.conn.Save(fetchMeta).Error
-}
-
-// IndexChunk has a starting point and an ending point for Chunk
-type IndexChunk struct {
-	From, To int
-}
-
-func chunkSlice(length int, chunkSize int) <-chan IndexChunk {
-	ch := make(chan IndexChunk)
-
-	go func() {
-		defer close(ch)
-
-		for i := 0; i < length; i += chunkSize {
-			idx := IndexChunk{i, i + chunkSize}
-			if length < idx.To {
-				idx.To = length
-			}
-			ch <- idx
-		}
-	}()
-
-	return ch
 }
