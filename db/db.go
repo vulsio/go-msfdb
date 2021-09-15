@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/inconshreveable/log15"
-	"github.com/takuzoo3868/go-msfdb/models"
+	"github.com/vulsio/go-msfdb/models"
 	"golang.org/x/xerrors"
 )
 

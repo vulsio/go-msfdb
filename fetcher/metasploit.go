@@ -9,9 +9,9 @@ import (
 	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
 
-	"github.com/takuzoo3868/go-msfdb/git"
-	"github.com/takuzoo3868/go-msfdb/models"
-	"github.com/takuzoo3868/go-msfdb/utils"
+	"github.com/vulsio/go-msfdb/git"
+	"github.com/vulsio/go-msfdb/models"
+	"github.com/vulsio/go-msfdb/utils"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	msfDir  = "rapid7"
 )
 
-// Module : https://github.com/takuzoo3868/msfdb-list-updater
+// Module : https://github.com/vulsio/msfdb-list-updater
 type Module struct {
 	Name        string   `json:"Name"`
 	Title       string   `json:"Title"`

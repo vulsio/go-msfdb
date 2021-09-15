@@ -20,9 +20,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/takuzoo3868/go-msfdb/config"
-	"github.com/takuzoo3868/go-msfdb/models"
-	"github.com/takuzoo3868/go-msfdb/utils"
+	"github.com/vulsio/go-msfdb/config"
+	"github.com/vulsio/go-msfdb/models"
+	"github.com/vulsio/go-msfdb/utils"
 )
 
 const (

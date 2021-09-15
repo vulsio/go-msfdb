@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
-	"github.com/takuzoo3868/go-msfdb/config"
-	"github.com/takuzoo3868/go-msfdb/models"
+	"github.com/vulsio/go-msfdb/config"
+	"github.com/vulsio/go-msfdb/models"
 )
 
 /**

@@ -1,7 +1,7 @@
 project_name: go-msfdb
 release:
   github:
-    owner: takuzoo3868
+    owner: vulsio
     name: go-msfdb
 builds:
 - goos:
@@ -9,7 +9,7 @@ builds:
   goarch:
   - amd64
   main: .
-  ldflags: -s -w -X github.com/takuzoo3868/go-msfdb/config.Version={{.Version}} -X github.com/takuzoo3868/go-msfdb/config.Revision={{.Commit}}
+  ldflags: -s -w -X github.com/vulsio/go-msfdb/config.Version={{.Version}} -X github.com/vulsio/go-msfdb/config.Revision={{.Commit}}
   binary: go-msfdb
 archives:
 - name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
