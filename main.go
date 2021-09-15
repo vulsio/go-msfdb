@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/takuzoo3868/go-msfdb/commands"
+	"github.com/vulsio/go-msfdb/commands"
 )
 
 func main() {

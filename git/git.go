@@ -9,7 +9,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
 
-	"github.com/takuzoo3868/go-msfdb/utils"
+	"github.com/vulsio/go-msfdb/utils"
 )
 
 // Operations :

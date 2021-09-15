@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/takuzoo3868/go-msfdb/config"
+	"github.com/vulsio/go-msfdb/config"
 )
 
 func init() {

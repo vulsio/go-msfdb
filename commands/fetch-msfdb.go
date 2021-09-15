@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
-	"github.com/takuzoo3868/go-msfdb/db"
-	"github.com/takuzoo3868/go-msfdb/fetcher"
-	"github.com/takuzoo3868/go-msfdb/git"
-	"github.com/takuzoo3868/go-msfdb/models"
-	"github.com/takuzoo3868/go-msfdb/utils"
+	"github.com/vulsio/go-msfdb/db"
+	"github.com/vulsio/go-msfdb/fetcher"
+	"github.com/vulsio/go-msfdb/git"
+	"github.com/vulsio/go-msfdb/models"
+	"github.com/vulsio/go-msfdb/utils"
 )
 
 var fetchMetasploitDBCmd = &cobra.Command{

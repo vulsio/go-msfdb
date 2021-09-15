@@ -2,7 +2,7 @@ FROM golang:alpine as builder
 
 RUN apk add --no-cache make git gcc musl-dev
 
-ENV REPOSITORY github.com/takuzoo3868/go-msfdb
+ENV REPOSITORY github.com/vulsio/go-msfdb
 COPY . $GOPATH/src/$REPOSITORY
 RUN cd $GOPATH/src/$REPOSITORY && make install
 

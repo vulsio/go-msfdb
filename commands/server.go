@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
-	"github.com/takuzoo3868/go-msfdb/db"
-	server "github.com/takuzoo3868/go-msfdb/server"
-	"github.com/takuzoo3868/go-msfdb/utils"
+	"github.com/vulsio/go-msfdb/db"
+	server "github.com/vulsio/go-msfdb/server"
+	"github.com/vulsio/go-msfdb/utils"
 )
 
 // serverCmd represents the server command

@@ -1,5 +1,5 @@
 # go-msfdb
-[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/takuzoo3868/go-msfdb/blob/master/LICENSE)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/vulsio/go-msfdb/blob/master/LICENSE)
 
 This is a tool for searching CVEs in Metasploit-Framework modules from [msfdb-list](https://github.com/vulsio/msfdb-list).
 Metasploit modules are inserted at sqlite database(go-msfdb) can be searched by command line interface.
@@ -18,9 +18,9 @@ go-msfdb requires the following packages.
 
 ###### Install go-msfdb
 ```bash
-$ mkdir -p $GOPATH/src/github.com/takuzoo3868
-$ cd $GOPATH/src/github.com/takuzoo3868
-$ git clone https://github.com/takuzoo3868/go-msfdb.git
+$ mkdir -p $GOPATH/src/github.com/vulsio
+$ cd $GOPATH/src/github.com/vulsio
+$ git clone https://github.com/vulsio/go-msfdb.git
 $ cd go-msfdb
 $ make install
 ```
