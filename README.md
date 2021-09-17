@@ -51,6 +51,7 @@ Global Flags:
       --http-proxy string   http://proxy-url:port (default: empty)
       --log-dir string      /path/to/log
       --log-json            output log as JSON
+      --log-to-file         output log to file
       --quiet               quiet mode (no output)
 
 Use "go-msfdb fetch [command] --help" for more information about a command.
@@ -83,6 +84,7 @@ Global Flags:
       --http-proxy string   http://proxy-url:port (default: empty)
       --log-dir string      /path/to/log
       --log-json            output log as JSON
+      --log-to-file         output log to file
       --quiet               quiet mode (no output)
 ```
 
