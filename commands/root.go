@@ -29,6 +29,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.go-msfdb.yaml)")
 
+	RootCmd.PersistentFlags().Bool("log-to-file", false, "output log to file")
+	_ = viper.BindPFlag("log-to-file", RootCmd.PersistentFlags().Lookup("log-to-file"))
+
 	RootCmd.PersistentFlags().String("log-dir", "", "/path/to/log")
 	if err := viper.BindPFlag("log-dir", RootCmd.PersistentFlags().Lookup("log-dir")); err != nil {
 		panic(err)
