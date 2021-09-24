@@ -38,8 +38,9 @@ func Start(logToFile bool, logDir string, driver db.DB) error {
 	// Routes
 	e.GET("/health", health())
 	e.GET("/cves/:cve", getModuleByCveID(driver))
+	e.POST("/multi-cves", getModulesByCveIDs(driver))
 	e.GET("/edbs/:edb", getModuleByEdbID(driver))
-
+	e.POST("/multi-edbs", getModulesByEdbIDs(driver))
 	bindURL := fmt.Sprintf("%s:%s", viper.GetString("bind"), viper.GetString("port"))
 	log15.Info("Listening...", "URL", bindURL)
 
@@ -65,6 +66,26 @@ func getModuleByCveID(driver db.DB) echo.HandlerFunc {
 	}
 }
 
+type param struct {
+	Args []string `json:"args"`
+}
+
+func getModulesByCveIDs(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		cveIDs := param{}
+		if err := context.Bind(&cveIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "CVEIDs", cveIDs.Args)
+
+		exploits := driver.GetModulesByCveIDs(cveIDs.Args)
+		if err != nil {
+			log15.Error("Failed to get module info by CVE.", "err", err)
+		}
+		return context.JSON(http.StatusOK, exploits)
+	}
+}
+
 func getModuleByEdbID(driver db.DB) echo.HandlerFunc {
 	return func(context echo.Context) (err error) {
 		exploitDBID := context.Param("edb")
@@ -75,5 +96,21 @@ func getModuleByEdbID(driver db.DB) echo.HandlerFunc {
 			log15.Error("Failed to get module info by EDB-ID.", "err", err)
 		}
 		return context.JSON(http.StatusOK, exploit)
+	}
+}
+
+func getModulesByEdbIDs(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		edbIDs := param{}
+		if err := context.Bind(&edbIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "ExploitDBIDs", edbIDs.Args)
+
+		exploits := driver.GetModulesByEdbIDs(edbIDs.Args)
+		if err != nil {
+			log15.Error("Failed to get module info by EDB-ID.", "err", err)
+		}
+		return context.JSON(http.StatusOK, exploits)
 	}
 }

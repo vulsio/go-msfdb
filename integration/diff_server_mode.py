@@ -16,7 +16,7 @@ import shutil
 import time
 
 
-def diff_response(args: Tuple[str, str]):
+def diff_response(args: Tuple[str, list[str]]):
     session = requests.Session()
     retries = Retry(total=5,
                     backoff_factor=1,
@@ -24,25 +24,49 @@ def diff_response(args: Tuple[str, str]):
     session.mount("http://", HTTPAdapter(max_retries=retries))
 
     # Endpoint
-    # /cves/:cve
-    # /edbs/:edb
-    path = f'{args[0]}/{args[1]}'
-    try:
-        response_old = requests.get(
-            f'http://127.0.0.1:1325/{path}', timeout=(3.0, 10.0)).json()
-        response_new = requests.get(
-            f'http://127.0.0.1:1326/{path}', timeout=(3.0, 10.0)).json()
-    except requests.ConnectionError as e:
-        logger.error(
-            f'Failed to Connection..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
-        exit(1)
-    except requests.ReadTimeout as e:
-        logger.warning(
-            f'Failed to ReadTimeout..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
-    except Exception as e:
-        logger.error(
-            f'Failed to GET request..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
-        exit(1)
+    # GET /cves/:cve
+    # GET /edbs/:edb
+    # POST /multi-cves
+    # POST /multi-edbs
+    if args[0] in ['cves', 'edbs']:
+        path = f'{args[0]}/{args[1][0]}'
+        try:
+            response_old = requests.get(
+                f'http://127.0.0.1:1325/{path}', timeout=(3.0, 10.0)).json()
+            response_new = requests.get(
+                f'http://127.0.0.1:1326/{path}', timeout=(3.0, 10.0)).json()
+        except requests.ConnectionError as e:
+            logger.error(
+                f'Failed to Connection..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+            exit(1)
+        except requests.ReadTimeout as e:
+            logger.warning(
+                f'Failed to ReadTimeout..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+        except Exception as e:
+            logger.error(
+                f'Failed to GET request..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+            exit(1)
+    else:
+        path = f'{args[0]}'
+        k = math.ceil(len(args[1])/5)
+        for _ in range(5):
+            payload = {"args": random.sample(args[1], k)}
+            try:
+                response_old = session.post(
+                    f'http://127.0.0.1:1325/{path}', data=json.dumps(payload), headers={'content-type': 'application/json'}, timeout=3.0).json()
+                response_new = session.post(
+                    f'http://127.0.0.1:1326/{path}', data=json.dumps(payload), headers={'content-type': 'application/json'}, timeout=3.0).json()
+            except requests.ConnectionError as e:
+                logger.error(
+                    f'Failed to Connection..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+                exit(1)
+            except requests.ReadTimeout as e:
+                logger.warning(
+                    f'Failed to ReadTimeout..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+            except Exception as e:
+                logger.error(
+                    f'Failed to GET request..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
+                exit(1)
 
     diff = DeepDiff(response_old, response_new, ignore_order=True)
     if diff != {}:
@@ -57,7 +81,7 @@ def diff_response(args: Tuple[str, str]):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('mode', choices=['cves', 'edbs'],
+parser.add_argument('mode', choices=['cves', 'multi-cves', 'edbs', 'multi-edbs'],
                     help='Specify the mode to test.')
 parser.add_argument("--sample_rate", type=float, default=0.01,
                     help="Adjust the rate of data used for testing (len(test_data) * sample_rate)")
@@ -97,9 +121,9 @@ else:
     exit(1)
 
 list_path = None
-if args.mode == 'cves':
+if args.mode in ['cves', 'multi-cves']:
     list_path = f"integration/cveid.txt"
-if args.mode == 'edbs':
+if args.mode == ['edbs', 'multi-edbs']:
     list_path = f"integration/edbid.txt"
 
 if not os.path.isfile(list_path):
@@ -114,6 +138,9 @@ os.makedirs(diff_path, exist_ok=True)
 with open(list_path) as f:
     list = [s.strip() for s in f.readlines()]
     list = random.sample(list, math.ceil(len(list) * args.sample_rate))
-    with ThreadPoolExecutor() as executor:
-        ins = ((args.mode, e) for e in list)
-        executor.map(diff_response, ins)
+    if args.mode in ['multi-cves', 'multi-edbs']:
+        diff_response(args.mode, list)
+    else:
+        with ThreadPoolExecutor() as executor:
+            ins = ((args.mode, e) for e in list)
+            executor.map(diff_response, ins)
