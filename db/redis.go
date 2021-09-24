@@ -297,15 +297,6 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	return nil
 }
 
-// GetModuleMultiByCveID :
-func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
-	modules := map[string][]models.Metasploit{}
-	for _, cveID := range cveIDs {
-		modules[cveID] = r.GetModuleByCveID(cveID)
-	}
-	return modules
-}
-
 // GetModuleByCveID :
 func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ctx := context.Background()
@@ -331,8 +322,8 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	return modules
 }
 
-// GetModulesByCveIDs :
-func (r *RedisDriver) GetModulesByCveIDs(cveIDs []string) map[string][]models.Metasploit {
+// GetModuleMultiByCveID :
+func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
 	ctx := context.Background()
 
 	if len(cveIDs) == 0 {
@@ -420,8 +411,8 @@ func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	return modules
 }
 
-// GetModulesByEdbIDs :
-func (r *RedisDriver) GetModulesByEdbIDs(edbIDs []string) map[string][]models.Metasploit {
+// GetModuleMultiByEdbID :
+func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
 	ctx := context.Background()
 
 	if len(edbIDs) == 0 {

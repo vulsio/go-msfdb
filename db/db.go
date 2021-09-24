@@ -21,9 +21,9 @@ type DB interface {
 
 	InsertMetasploit([]models.Metasploit) error
 	GetModuleByCveID(string) []models.Metasploit
-	GetModulesByCveIDs([]string) map[string][]models.Metasploit
+	GetModuleMultiByCveID([]string) map[string][]models.Metasploit
 	GetModuleByEdbID(string) []models.Metasploit
-	GetModulesByEdbIDs([]string) map[string][]models.Metasploit
+	GetModuleMultiByEdbID([]string) map[string][]models.Metasploit
 }
 
 // NewDB :
