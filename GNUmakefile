@@ -15,6 +15,8 @@
 	clean-integration \
 	fetch-rdb \
 	fetch-redis \
+	diff-cves \
+	diff-edbs \
 	diff-server-rdb \
 	diff-server-redis \
 	diff-server-rdb-redis
@@ -103,22 +105,22 @@ diff-edbs:
 diff-server-rdb:
 	integration/go-msfdb.old server --dbpath=integration/go-msfdb.old.sqlite3 --port 1325 > /dev/null 2>&1 & 
 	integration/go-msfdb.new server --dbpath=integration/go-msfdb.new.sqlite3 --port 1326 > /dev/null 2>&1 &
-	diff-cves
-	diff-edbs
+	make diff-cves
+	make diff-edbs
 	pkill go-msfdb.old 
 	pkill go-msfdb.new
 
 diff-server-redis:
 	integration/go-msfdb.old server --dbtype redis --dbpath "redis://127.0.0.1:6379/0" --port 1325 > /dev/null 2>&1 & 
 	integration/go-msfdb.new server --dbtype redis --dbpath "redis://127.0.0.1:6380/0" --port 1326 > /dev/null 2>&1 &
-	diff-cves
-	diff-edbs
+	make diff-cves
+	make diff-edbs
 	pkill go-msfdb.old 
 	pkill go-msfdb.new
 
 diff-server-rdb-redis:
 	integration/go-msfdb.new server --dbpath=integration/go-msfdb.new.sqlite3 --port 1325 > /dev/null 2>&1 &
 	integration/go-msfdb.new server --dbtype redis --dbpath "redis://127.0.0.1:6380/0" --port 1326 > /dev/null 2>&1 &
-	diff-cves
-	diff-edbs
+	make diff-cves
+	make diff-edbs
 	pkill go-msfdb.new

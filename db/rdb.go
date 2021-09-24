@@ -216,7 +216,7 @@ func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 func (r *RDBDriver) GetModulesByEdbIDs(edbIDs []string) map[string][]models.Metasploit {
 	ms := map[string][]models.Metasploit{}
 	for _, edbID := range edbIDs {
-		module := r.GetModuleByCveID(edbID)
+		module := r.GetModuleByEdbID(edbID)
 		if module == nil {
 			log15.Error("Failed to get module info by CVE", "EdbID", edbID)
 			return nil

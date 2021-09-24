@@ -14,6 +14,7 @@ import math
 import json
 import shutil
 import time
+import uuid
 
 
 def diff_response(args: Tuple[str, list[str]]):
@@ -46,6 +47,17 @@ def diff_response(args: Tuple[str, list[str]]):
             logger.error(
                 f'Failed to GET request..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
             exit(1)
+
+        diff = DeepDiff(response_old, response_new, ignore_order=True)
+        if diff != {}:
+            logger.warning(
+                f'There is a difference between old and new(or RDB and Redis):\n {pprint.pformat({"args": args, "path": path}, indent=2)}')
+
+            diff_path = f'integration/diff/{args[0]}/{args[1]}'
+            with open(f'{diff_path}.old', 'w') as w:
+                w.write(json.dumps(response_old, indent=4))
+            with open(f'{diff_path}.new', 'w') as w:
+                w.write(json.dumps(response_new, indent=4))
     else:
         path = f'{args[0]}'
         k = math.ceil(len(args[1])/5)
@@ -68,16 +80,19 @@ def diff_response(args: Tuple[str, list[str]]):
                     f'Failed to GET request..., err: {e}, {pprint.pformat({"args": args, "path": path}, indent=2)}')
                 exit(1)
 
-    diff = DeepDiff(response_old, response_new, ignore_order=True)
-    if diff != {}:
-        logger.warning(
-            f'There is a difference between old and new(or RDB and Redis):\n {pprint.pformat({"args": args, "path": path}, indent=2)}')
+            diff = DeepDiff(response_old, response_new, ignore_order=True)
+            if diff != {}:
+                logger.warning(
+                    f'There is a difference between old and new(or RDB and Redis):\n {pprint.pformat({"args": args, "path": path}, indent=2)}')
 
-        diff_path = f'integration/diff/{args[0]}/{args[1]}'
-        with open(f'{diff_path}.old', 'w') as w:
-            w.write(json.dumps(response_old, indent=4))
-        with open(f'{diff_path}.new', 'w') as w:
-            w.write(json.dumps(response_new, indent=4))
+                title = uuid.uuid4()
+                diff_path = f'integration/diff/{args[0]}/{title}'
+                with open(f'{diff_path}.old', 'w') as w:
+                    w.write(json.dumps(
+                        {'args': args, 'response': response_old}, indent=4))
+                with open(f'{diff_path}.new', 'w') as w:
+                    w.write(json.dumps(
+                        {'args': args, 'response': response_new}, indent=4))
 
 
 parser = argparse.ArgumentParser()
@@ -123,7 +138,7 @@ else:
 list_path = None
 if args.mode in ['cves', 'multi-cves']:
     list_path = f"integration/cveid.txt"
-if args.mode == ['edbs', 'multi-edbs']:
+if args.mode in ['edbs', 'multi-edbs']:
     list_path = f"integration/edbid.txt"
 
 if not os.path.isfile(list_path):
@@ -139,8 +154,8 @@ with open(list_path) as f:
     list = [s.strip() for s in f.readlines()]
     list = random.sample(list, math.ceil(len(list) * args.sample_rate))
     if args.mode in ['multi-cves', 'multi-edbs']:
-        diff_response(args.mode, list)
+        diff_response((args.mode, list))
     else:
         with ThreadPoolExecutor() as executor:
-            ins = ((args.mode, e) for e in list)
+            ins = ((args.mode, [e]) for e in list)
             executor.map(diff_response, ins)
