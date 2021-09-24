@@ -167,6 +167,15 @@ func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err 
 	return nil
 }
 
+// GetModuleMultiByCveID :
+func (r *RDBDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
+	modules := map[string][]models.Metasploit{}
+	for _, cveID := range cveIDs {
+		modules[cveID] = r.GetModuleByCveID(cveID)
+	}
+	return modules
+}
+
 // GetModuleByCveID :
 func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ms := []models.Metasploit{}
@@ -175,8 +184,16 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 		log15.Error("Failed to get module info by CVE", "err", err)
 		return []models.Metasploit{}
 	}
-
 	return ms
+}
+
+// GetModuleMultiByEdbID :
+func (r *RDBDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
+	modules := map[string][]models.Metasploit{}
+	for _, edbID := range edbIDs {
+		modules[edbID] = r.GetModuleByEdbID(edbID)
+	}
+	return modules
 }
 
 // GetModuleByEdbID :
