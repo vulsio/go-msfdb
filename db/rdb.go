@@ -168,53 +168,51 @@ func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err 
 }
 
 // GetModuleByCveID :
-func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
+func (r *RDBDriver) GetModuleByCveID(cveID string) ([]models.Metasploit, error) {
 	ms := []models.Metasploit{}
 	err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by CVE", "err", err)
-		return nil
+		return nil, err
 	}
-	return ms
+	return ms, nil
 }
 
 // GetModuleMultiByCveID :
-func (r *RDBDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
+func (r *RDBDriver) GetModuleMultiByCveID(cveIDs []string) (map[string][]models.Metasploit, error) {
 	ms := map[string][]models.Metasploit{}
 	for _, cveID := range cveIDs {
-		module := r.GetModuleByCveID(cveID)
-		if module == nil {
-			log15.Error("Failed to get module info by CVE", "CVEID", cveID)
-			return nil
+		module, err := r.GetModuleByCveID(cveID)
+		if err != nil {
+			return nil, err
 		}
 		ms[cveID] = module
 	}
-	return ms
+	return ms, nil
 }
 
 // GetModuleByEdbID :
-func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
+func (r *RDBDriver) GetModuleByEdbID(edbID string) ([]models.Metasploit, error) {
 	ms := []models.Metasploit{}
 	err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by EDB-ID", "err", err)
-		return nil
+		return nil, err
 	}
-	return ms
+	return ms, nil
 }
 
 // GetModuleMultiByEdbID :
-func (r *RDBDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
+func (r *RDBDriver) GetModuleMultiByEdbID(edbIDs []string) (map[string][]models.Metasploit, error) {
 	ms := map[string][]models.Metasploit{}
 	for _, edbID := range edbIDs {
-		module := r.GetModuleByEdbID(edbID)
-		if module == nil {
-			log15.Error("Failed to get module info by CVE", "EdbID", edbID)
-			return nil
+		module, err := r.GetModuleByEdbID(edbID)
+		if err != nil {
+			return nil, err
 		}
 		ms[edbID] = module
 	}
-	return ms
+	return ms, nil
 }
 
 // IsGoMsfdbModelV1 determines if the DB was created at the time of go-msfdb Model v1

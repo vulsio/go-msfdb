@@ -20,10 +20,10 @@ type DB interface {
 	UpsertFetchMeta(*models.FetchMeta) error
 
 	InsertMetasploit([]models.Metasploit) error
-	GetModuleByCveID(string) []models.Metasploit
-	GetModuleMultiByCveID([]string) map[string][]models.Metasploit
-	GetModuleByEdbID(string) []models.Metasploit
-	GetModuleMultiByEdbID([]string) map[string][]models.Metasploit
+	GetModuleByCveID(string) ([]models.Metasploit, error)
+	GetModuleMultiByCveID([]string) (map[string][]models.Metasploit, error)
+	GetModuleByEdbID(string) ([]models.Metasploit, error)
+	GetModuleMultiByEdbID([]string) (map[string][]models.Metasploit, error)
 }
 
 // NewDB :
