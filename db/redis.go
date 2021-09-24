@@ -335,7 +335,7 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
 	modules := map[string][]models.Metasploit{}
 	for _, edbID := range edbIDs {
-		modules[edbID] = r.GetModuleByCveID(edbID)
+		modules[edbID] = r.GetModuleByEdbID(edbID)
 	}
 	return modules
 }
