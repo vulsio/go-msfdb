@@ -182,18 +182,23 @@ func (r *RDBDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by CVE", "err", err)
-		return []models.Metasploit{}
+		return nil
 	}
 	return ms
 }
 
-// GetModuleMultiByEdbID :
-func (r *RDBDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
-	modules := map[string][]models.Metasploit{}
-	for _, edbID := range edbIDs {
-		modules[edbID] = r.GetModuleByEdbID(edbID)
+// GetModulesByCveIDs :
+func (r *RDBDriver) GetModulesByCveIDs(cveIDs []string) map[string][]models.Metasploit {
+	ms := map[string][]models.Metasploit{}
+	for _, cveID := range cveIDs {
+		module := r.GetModuleByCveID(cveID)
+		if module == nil {
+			log15.Error("Failed to get module info by CVE", "CVEID", cveID)
+			return nil
+		}
+		ms[cveID] = module
 	}
-	return modules
+	return ms
 }
 
 // GetModuleByEdbID :
@@ -202,9 +207,22 @@ func (r *RDBDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log15.Error("Failed to get module info by EDB-ID", "err", err)
-		return []models.Metasploit{}
+		return nil
 	}
+	return ms
+}
 
+// GetModulesByEdbIDs :
+func (r *RDBDriver) GetModulesByEdbIDs(edbIDs []string) map[string][]models.Metasploit {
+	ms := map[string][]models.Metasploit{}
+	for _, edbID := range edbIDs {
+		module := r.GetModuleByCveID(edbID)
+		if module == nil {
+			log15.Error("Failed to get module info by CVE", "EdbID", edbID)
+			return nil
+		}
+		ms[edbID] = module
+	}
 	return ms
 }
 
