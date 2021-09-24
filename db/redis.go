@@ -260,7 +260,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 				}
 			}
 		}
-		if _, err = pipe.Exec(ctx); err != nil {
+		if _, err := pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
 		bar.Add(idx.To - idx.From)
@@ -289,7 +289,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	if err := pipe.Set(ctx, depKey, string(newDepsJSON), time.Duration(expire*uint(time.Second))).Err(); err != nil {
 		return fmt.Errorf("Failed to Set depkey. err: %s", err)
 	}
-	if _, err = pipe.Exec(ctx); err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 	}
 
@@ -332,8 +332,7 @@ func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) (map[string][]model
 	for _, cveID := range cveIDs {
 		m[cveID] = pipe.HGetAll(ctx, fmt.Sprintf(cveIDKeyFormat, cveID))
 	}
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		log15.Error("Failed to exec pipeline", "err", err)
 		return nil, err
 	}
@@ -421,8 +420,7 @@ func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) (map[string][]model
 	for _, edbID := range edbIDs {
 		m[edbID] = pipe.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID))
 	}
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		log15.Error("Failed to exec pipeline", "err", err)
 		return nil, err
 	}
