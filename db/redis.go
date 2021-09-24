@@ -297,6 +297,15 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	return nil
 }
 
+// GetModuleMultiByCveID :
+func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
+	modules := map[string][]models.Metasploit{}
+	for _, cveID := range cveIDs {
+		modules[cveID] = r.GetModuleByCveID(cveID)
+	}
+	return modules
+}
+
 // GetModuleByCveID :
 func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 	ctx := context.Background()
@@ -318,6 +327,15 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 			return nil
 		}
 		modules = append(modules, module)
+	}
+	return modules
+}
+
+// GetModuleMultiByEdbID :
+func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
+	modules := map[string][]models.Metasploit{}
+	for _, edbID := range edbIDs {
+		modules[edbID] = r.GetModuleByEdbID(edbID)
 	}
 	return modules
 }
