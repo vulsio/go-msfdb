@@ -12,18 +12,16 @@ Use `127.0.0.1:1325` and `127.0.0.1:1326` to diff the server mode between the la
 If you have prepared the two addresses yourself, you can use the following Python script.
 ```terminal
 $ python diff_server_mode.py --help
-usage: diff_server_mode.py [-h] [--sample_rate SAMPLE_RATE]
-                           [--debug | --no-debug]
-                           {cves,edbs}
+usage: diff_server_mode.py [-h] [--sample_rate SAMPLE_RATE] [--debug | --no-debug] {cves,multi-cves,edbs,multi-edbs}
 
 positional arguments:
-  {cves,edbs}           Specify the mode to test.
+  {cves,multi-cves,edbs,multi-edbs}
+                        Specify the mode to test.
 
 optional arguments:
   -h, --help            show this help message and exit
   --sample_rate SAMPLE_RATE
-                        Adjust the rate of data used for testing
-                        (len(test_data) * sample_rate)
+                        Adjust the rate of data used for testing (len(test_data) * sample_rate)
   --debug, --no-debug   print debug message
 ```
 

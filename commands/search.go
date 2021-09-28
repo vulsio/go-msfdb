@@ -68,19 +68,21 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
 			return errors.New("Invalid CVE Param")
 		}
-		results := driver.GetModuleByCveID(param)
-		if err := printResults(results); err != nil {
+		results, err := driver.GetModuleByCveID(param)
+		if err != nil {
 			return err
 		}
+		printResults(results)
 	case "EDB":
 		if !edbIDRegexp.MatchString(param) {
 			log15.Error("Specify the search type [EDB] parameters like `--param EDB-xxxx`")
 			return errors.New("Invalid EDB Param")
 		}
-		results := driver.GetModuleByEdbID(param)
-		if err := printResults(results); err != nil {
+		results, err := driver.GetModuleByEdbID(param)
+		if err != nil {
 			return err
 		}
+		printResults(results)
 	default:
 		log15.Error("Specify the search type [CVE / EDB].")
 		return errors.New("Invalid Type")
@@ -88,11 +90,10 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func printResults(results []models.Metasploit) error {
+func printResults(results []models.Metasploit) {
 	fmt.Println("")
 	fmt.Println("Results: CVE-Metasploit Record")
 	fmt.Println("---------------------------------------")
-
 	for _, r := range results {
 		fmt.Printf("\n[*] CVE: %s\n", r.CveID)
 		fmt.Printf("  Name: %s\n", r.Name)
@@ -111,8 +112,5 @@ func printResults(results []models.Metasploit) error {
 			}
 		}
 	}
-
 	fmt.Println("\n---------------------------------------")
-
-	return nil
 }

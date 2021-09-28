@@ -260,7 +260,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 				}
 			}
 		}
-		if _, err = pipe.Exec(ctx); err != nil {
+		if _, err := pipe.Exec(ctx); err != nil {
 			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 		}
 		bar.Add(idx.To - idx.From)
@@ -289,7 +289,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	if err := pipe.Set(ctx, depKey, string(newDepsJSON), time.Duration(expire*uint(time.Second))).Err(); err != nil {
 		return fmt.Errorf("Failed to Set depkey. err: %s", err)
 	}
-	if _, err = pipe.Exec(ctx); err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		return fmt.Errorf("Failed to exec pipeline. err: %s", err)
 	}
 
@@ -297,26 +297,14 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	return nil
 }
 
-// GetModuleMultiByCveID :
-func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) map[string][]models.Metasploit {
-	modules := map[string][]models.Metasploit{}
-	for _, cveID := range cveIDs {
-		modules[cveID] = r.GetModuleByCveID(cveID)
-	}
-	return modules
-}
-
 // GetModuleByCveID :
-func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
+func (r *RedisDriver) GetModuleByCveID(cveID string) ([]models.Metasploit, error) {
 	ctx := context.Background()
 
 	metasploits, err := r.conn.HGetAll(ctx, fmt.Sprintf(cveIDKeyFormat, cveID)).Result()
 	if err != nil {
 		log15.Error("Failed to get metasploit by CVEID.", "err", err)
-		return nil
-	}
-	if len(metasploits) == 0 {
-		return []models.Metasploit{}
+		return nil, err
 	}
 
 	modules := []models.Metasploit{}
@@ -324,32 +312,63 @@ func (r *RedisDriver) GetModuleByCveID(cveID string) []models.Metasploit {
 		var module models.Metasploit
 		if err := json.Unmarshal([]byte(metasploit), &module); err != nil {
 			log15.Error("Failed to Unmarshal json.", "err", err)
-			return nil
+			return nil, err
 		}
 		modules = append(modules, module)
 	}
-	return modules
+	return modules, nil
 }
 
-// GetModuleMultiByEdbID :
-func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) map[string][]models.Metasploit {
-	modules := map[string][]models.Metasploit{}
-	for _, edbID := range edbIDs {
-		modules[edbID] = r.GetModuleByEdbID(edbID)
+// GetModuleMultiByCveID :
+func (r *RedisDriver) GetModuleMultiByCveID(cveIDs []string) (map[string][]models.Metasploit, error) {
+	ctx := context.Background()
+
+	if len(cveIDs) == 0 {
+		return map[string][]models.Metasploit{}, nil
 	}
-	return modules
+
+	m := map[string]*redis.StringStringMapCmd{}
+	pipe := r.conn.Pipeline()
+	for _, cveID := range cveIDs {
+		m[cveID] = pipe.HGetAll(ctx, fmt.Sprintf(cveIDKeyFormat, cveID))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		log15.Error("Failed to exec pipeline", "err", err)
+		return nil, err
+	}
+
+	ms := map[string][]models.Metasploit{}
+	for cveID, cmd := range m {
+		results, err := cmd.Result()
+		if err != nil {
+			log15.Error("Failed to get metasploit by CVEID.", "err", err)
+			return nil, err
+		}
+
+		modules := []models.Metasploit{}
+		for _, result := range results {
+			var module models.Metasploit
+			if err := json.Unmarshal([]byte(result), &module); err != nil {
+				log15.Error("Failed to Unmarshal json.", "err", err)
+				return nil, err
+			}
+			modules = append(modules, module)
+		}
+		ms[cveID] = modules
+	}
+	return ms, nil
 }
 
 // GetModuleByEdbID :
-func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
+func (r *RedisDriver) GetModuleByEdbID(edbID string) ([]models.Metasploit, error) {
 	ctx := context.Background()
 	members, err := r.conn.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID)).Result()
 	if err != nil {
 		log15.Error("Failed to get metasploit by EDBID.", "err", err)
-		return nil
+		return nil, err
 	}
 	if len(members) == 0 {
-		return []models.Metasploit{}
+		return []models.Metasploit{}, nil
 	}
 
 	pipe := r.conn.Pipeline()
@@ -357,7 +376,7 @@ func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 		ss := strings.Split(member, "#")
 		if len(ss) != 2 {
 			log15.Error("Failed to parse member.", "err", "invalid format")
-			return nil
+			return nil, xerrors.Errorf("Failed to parse member. err: member(%s) is invalid format", member)
 		}
 		cveID := ss[0]
 		hash := ss[1]
@@ -366,7 +385,7 @@ func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 	cmders, err := pipe.Exec(ctx)
 	if err != nil {
 		log15.Error("Failed to exec pipeline.", "err", err)
-		return nil
+		return nil, err
 	}
 
 	modules := []models.Metasploit{}
@@ -374,16 +393,80 @@ func (r *RedisDriver) GetModuleByEdbID(edbID string) []models.Metasploit {
 		str, err := cmder.(*redis.StringCmd).Result()
 		if err != nil {
 			log15.Error("Failed to HGet.", "err", err)
-			return nil
+			return nil, err
 		}
 
 		var module models.Metasploit
 		if err := json.Unmarshal([]byte(str), &module); err != nil {
 			log15.Error("Failed to Unmarshal json.", "err", err)
-			return nil
+			return nil, err
 		}
 
 		modules = append(modules, module)
 	}
-	return modules
+	return modules, nil
+}
+
+// GetModuleMultiByEdbID :
+func (r *RedisDriver) GetModuleMultiByEdbID(edbIDs []string) (map[string][]models.Metasploit, error) {
+	ctx := context.Background()
+
+	if len(edbIDs) == 0 {
+		return map[string][]models.Metasploit{}, nil
+	}
+
+	m := map[string]*redis.StringSliceCmd{}
+	pipe := r.conn.Pipeline()
+	for _, edbID := range edbIDs {
+		m[edbID] = pipe.SMembers(ctx, fmt.Sprintf(edbIDKeyFormat, edbID))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		log15.Error("Failed to exec pipeline", "err", err)
+		return nil, err
+	}
+
+	ms := map[string][]models.Metasploit{}
+	for edbID, cmd := range m {
+		members, err := cmd.Result()
+		if err != nil {
+			log15.Error("Failed to get metasploit by EdbID.", "err", err)
+			return nil, err
+		}
+
+		pipe := r.conn.Pipeline()
+		for _, member := range members {
+			ss := strings.Split(member, "#")
+			if len(ss) != 2 {
+				log15.Error("Failed to parse member.", "err", "invalid format")
+				return nil, xerrors.Errorf("Failed to parse member. err: member(%s) is invalid format", member)
+			}
+			cveID := ss[0]
+			hash := ss[1]
+			_ = pipe.HGet(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash)
+		}
+		cmders, err := pipe.Exec(ctx)
+		if err != nil {
+			log15.Error("Failed to exec pipeline.", "err", err)
+			return nil, err
+		}
+
+		modules := []models.Metasploit{}
+		for _, cmder := range cmders {
+			str, err := cmder.(*redis.StringCmd).Result()
+			if err != nil {
+				log15.Error("Failed to HGet.", "err", err)
+				return nil, err
+			}
+
+			var module models.Metasploit
+			if err := json.Unmarshal([]byte(str), &module); err != nil {
+				log15.Error("Failed to Unmarshal json.", "err", err)
+				return nil, err
+			}
+
+			modules = append(modules, module)
+		}
+		ms[edbID] = modules
+	}
+	return ms, nil
 }

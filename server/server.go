@@ -38,8 +38,9 @@ func Start(logToFile bool, logDir string, driver db.DB) error {
 	// Routes
 	e.GET("/health", health())
 	e.GET("/cves/:cve", getModuleByCveID(driver))
+	e.POST("/multi-cves", getModuleMultiByCveID(driver))
 	e.GET("/edbs/:edb", getModuleByEdbID(driver))
-
+	e.POST("/multi-edbs", getModuleMultiByEdbID(driver))
 	bindURL := fmt.Sprintf("%s:%s", viper.GetString("bind"), viper.GetString("port"))
 	log15.Info("Listening...", "URL", bindURL)
 
@@ -57,9 +58,31 @@ func getModuleByCveID(driver db.DB) echo.HandlerFunc {
 		cve := context.Param("cve")
 		log15.Debug("Params", "CVE", cve)
 
-		exploits := driver.GetModuleByCveID(cve)
+		exploits, err := driver.GetModuleByCveID(cve)
 		if err != nil {
 			log15.Error("Failed to get module info by CVE.", "err", err)
+			return err
+		}
+		return context.JSON(http.StatusOK, exploits)
+	}
+}
+
+type param struct {
+	Args []string `json:"args"`
+}
+
+func getModuleMultiByCveID(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		cveIDs := param{}
+		if err := context.Bind(&cveIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "CVEIDs", cveIDs.Args)
+
+		exploits, err := driver.GetModuleMultiByCveID(cveIDs.Args)
+		if err != nil {
+			log15.Error("Failed to get module info by CVE.", "err", err)
+			return err
 		}
 		return context.JSON(http.StatusOK, exploits)
 	}
@@ -70,10 +93,28 @@ func getModuleByEdbID(driver db.DB) echo.HandlerFunc {
 		exploitDBID := context.Param("edb")
 		log15.Debug("Params", "ExploitDBID", exploitDBID)
 
-		exploit := driver.GetModuleByEdbID(exploitDBID)
+		exploit, err := driver.GetModuleByEdbID(exploitDBID)
 		if err != nil {
 			log15.Error("Failed to get module info by EDB-ID.", "err", err)
+			return err
 		}
 		return context.JSON(http.StatusOK, exploit)
+	}
+}
+
+func getModuleMultiByEdbID(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		edbIDs := param{}
+		if err := context.Bind(&edbIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "ExploitDBIDs", edbIDs.Args)
+
+		exploits, err := driver.GetModuleMultiByEdbID(edbIDs.Args)
+		if err != nil {
+			log15.Error("Failed to get module info by EDB-ID.", "err", err)
+			return err
+		}
+		return context.JSON(http.StatusOK, exploits)
 	}
 }
