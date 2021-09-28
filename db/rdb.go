@@ -77,14 +77,13 @@ func (r *RDBDriver) OpenDB(dbType, dbPath string, debugSQL bool) (locked bool, e
 	}
 
 	if err != nil {
-		msg := fmt.Sprintf("Failed to open DB. dbtype: %s, dbpath: %s, err: %s", dbType, dbPath, err)
 		if r.name == dialectSqlite3 {
 			switch err.(sqlite3.Error).Code {
 			case sqlite3.ErrLocked, sqlite3.ErrBusy:
-				return true, fmt.Errorf(msg)
+				return true, xerrors.Errorf("Failed to open DB. dbtype: %s, dbpath: %s, err: %w", dbType, dbPath, err)
 			}
 		}
-		return false, fmt.Errorf(msg)
+		return false, xerrors.Errorf("Failed to open DB. dbtype: %s, dbpath: %s, err: %w", dbType, dbPath, err)
 	}
 
 	if r.name == dialectSqlite3 {
@@ -158,7 +157,7 @@ func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err 
 
 	for idx := range chunkSlice(len(records), batchSize) {
 		if err = tx.Create(records[idx.From:idx.To]).Error; err != nil {
-			return fmt.Errorf("Failed to insert. err: %s", err)
+			return xerrors.Errorf("Failed to insert. err: %w", err)
 		}
 		bar.Add(idx.To - idx.From)
 	}
@@ -171,8 +170,7 @@ func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err 
 func (r *RDBDriver) GetModuleByCveID(cveID string) ([]models.Metasploit, error) {
 	ms := []models.Metasploit{}
 	if err := r.conn.Preload("References").Preload("Edbs").Where(&models.Metasploit{CveID: cveID}).Find(&ms).Error; err != nil {
-		log15.Error("Failed to get module info by CVE", "err", err)
-		return nil, err
+		return nil, xerrors.Errorf("Failed to get module info by CVE. err: %w", err)
 	}
 	return ms, nil
 }
@@ -194,8 +192,7 @@ func (r *RDBDriver) GetModuleMultiByCveID(cveIDs []string) (map[string][]models.
 func (r *RDBDriver) GetModuleByEdbID(edbID string) ([]models.Metasploit, error) {
 	ms := []models.Metasploit{}
 	if err := r.conn.Preload("References").Preload("Edbs").Joins("JOIN edbs ON edbs.metasploit_id = metasploits.id").Where("exploit_unique_id = ?", edbID).Find(&ms).Error; err != nil {
-		log15.Error("Failed to get module info by EDB-ID", "err", err)
-		return nil, err
+		return nil, xerrors.Errorf("Failed to get module info by EDB-ID. err: %w", err)
 	}
 	return ms, nil
 }

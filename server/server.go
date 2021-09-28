@@ -60,8 +60,7 @@ func getModuleByCveID(driver db.DB) echo.HandlerFunc {
 
 		exploits, err := driver.GetModuleByCveID(cve)
 		if err != nil {
-			log15.Error("Failed to get module info by CVE.", "err", err)
-			return err
+			return xerrors.Errorf("Failed to get module info by CVE. err: %w", err)
 		}
 		return context.JSON(http.StatusOK, exploits)
 	}
@@ -81,8 +80,7 @@ func getModuleMultiByCveID(driver db.DB) echo.HandlerFunc {
 
 		exploits, err := driver.GetModuleMultiByCveID(cveIDs.Args)
 		if err != nil {
-			log15.Error("Failed to get module info by CVE.", "err", err)
-			return err
+			return xerrors.Errorf("Failed to get module info by CVE. err: %w", err)
 		}
 		return context.JSON(http.StatusOK, exploits)
 	}
@@ -95,8 +93,7 @@ func getModuleByEdbID(driver db.DB) echo.HandlerFunc {
 
 		exploit, err := driver.GetModuleByEdbID(exploitDBID)
 		if err != nil {
-			log15.Error("Failed to get module info by EDB-ID.", "err", err)
-			return err
+			return xerrors.Errorf("Failed to get module info by EDB-ID. err: %w", err)
 		}
 		return context.JSON(http.StatusOK, exploit)
 	}
@@ -112,8 +109,7 @@ func getModuleMultiByEdbID(driver db.DB) echo.HandlerFunc {
 
 		exploits, err := driver.GetModuleMultiByEdbID(edbIDs.Args)
 		if err != nil {
-			log15.Error("Failed to get module info by EDB-ID.", "err", err)
-			return err
+			return xerrors.Errorf("Failed to get module info by EDB-ID. err: %w", err)
 		}
 		return context.JSON(http.StatusOK, exploits)
 	}

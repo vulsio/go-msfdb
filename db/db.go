@@ -1,9 +1,6 @@
 package db
 
 import (
-	"fmt"
-
-	"github.com/inconshreveable/log15"
 	"github.com/vulsio/go-msfdb/models"
 	"golang.org/x/xerrors"
 )
@@ -29,7 +26,7 @@ type DB interface {
 // NewDB :
 func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
-		return driver, false, fmt.Errorf("Failed to new db: %w", err)
+		return driver, false, xerrors.Errorf("Failed to new db: %w", err)
 	}
 
 	if locked, err := driver.OpenDB(dbType, dbPath, debugSQL); err != nil {
@@ -41,16 +38,14 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 
 	isV1, err := driver.IsGoMsfdbModelV1()
 	if err != nil {
-		log15.Error("Failed to IsGoMsfdbModelV1.", "err", err)
-		return nil, false, err
+		return nil, false, xerrors.Errorf("Failed to IsGoMsfdbModelV1. err: %w", err)
 	}
 	if isV1 {
-		log15.Error("Failed to NewDB. Since SchemaVersion is incompatible, delete Database and fetch again")
 		return nil, false, xerrors.New("Failed to NewDB. Since SchemaVersion is incompatible, delete Database and fetch again.")
 	}
 
 	if err := driver.MigrateDB(); err != nil {
-		return driver, false, fmt.Errorf("Failed to migrate db: %w", err)
+		return driver, false, xerrors.Errorf("Failed to migrate db: %w", err)
 	}
 	return driver, false, nil
 }
@@ -62,7 +57,7 @@ func newDB(dbType string) (DB, error) {
 	case dialectRedis:
 		return &RedisDriver{name: dbType}, nil
 	}
-	return nil, fmt.Errorf("Invalid database dialect, %s", dbType)
+	return nil, xerrors.Errorf("Invalid database dialect, %s", dbType)
 }
 
 // IndexChunk has a starting point and an ending point for Chunk
