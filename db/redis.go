@@ -257,7 +257,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			}
 		}
 		if _, err := pipe.Exec(ctx); err != nil {
-			return fmt.Errorf("Failed to exec pipeline. err: %s", err)
+			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 		}
 		bar.Add(idx.To - idx.From)
 	}
@@ -269,7 +269,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			for edb := range edbs {
 				if edb != "" {
 					if err := pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), fmt.Sprintf(edbIDKeyMemberFormat, cveID, hash)).Err(); err != nil {
-						return fmt.Errorf("Failed to SRem. err: %s", err)
+						return xerrors.Errorf("Failed to SRem. err: %w", err)
 					}
 				}
 			}
