@@ -1,11 +1,9 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
@@ -54,7 +52,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 	)
 	if err != nil {
 		if locked {
-			log15.Error("Failed to initialize DB. Close DB connection before fetching", "err", err)
+			return xerrors.Errorf("Failed to initialize DB. Close DB connection before fetching. err: %w", err)
 		}
 		return err
 	}
@@ -65,8 +63,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 	switch searchType {
 	case "CVE":
 		if !cveIDRegexp.MatchString(param) {
-			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
-			return errors.New("Invalid CVE Param")
+			return xerrors.Errorf("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
 		}
 		results, err := driver.GetModuleByCveID(param)
 		if err != nil {
@@ -75,8 +72,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 		printResults(results)
 	case "EDB":
 		if !edbIDRegexp.MatchString(param) {
-			log15.Error("Specify the search type [EDB] parameters like `--param EDB-xxxx`")
-			return errors.New("Invalid EDB Param")
+			return xerrors.Errorf("Specify the search type [EDB] parameters like `--param EDB-xxxx`")
 		}
 		results, err := driver.GetModuleByEdbID(param)
 		if err != nil {
@@ -84,8 +80,7 @@ func searchMetasploit(cmd *cobra.Command, args []string) (err error) {
 		}
 		printResults(results)
 	default:
-		log15.Error("Specify the search type [CVE / EDB].")
-		return errors.New("Invalid Type")
+		return xerrors.Errorf("Specify the search type [CVE / EDB].")
 	}
 	return nil
 }
