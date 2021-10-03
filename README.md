@@ -39,7 +39,6 @@ Available Commands:
   msfdb       Fetch the data of metasploit-framework cve's list
 
 Flags:
-      --expire uint   timeout to set for Redis keys in seconds. If set to 0, the key is persistent.
   -h, --help          help for fetch
 
 Global Flags:

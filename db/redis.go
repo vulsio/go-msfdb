@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-redis/redis/v8"
@@ -162,7 +161,6 @@ func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 // InsertMetasploit :
 func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 	ctx := context.Background()
-	expire := viper.GetUint("expire")
 	batchSize := viper.GetInt("batch-size")
 	if batchSize < 1 {
 		return fmt.Errorf("Failed to set batch-size. err: batch-size option is not set properly")
@@ -193,18 +191,8 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			}
 
 			hash := fmt.Sprintf("%x", md5.Sum(j))
-			key := fmt.Sprintf(cveIDKeyFormat, record.CveID)
-			if err := pipe.HSet(ctx, key, hash, string(j)).Err(); err != nil {
+			if err := pipe.HSet(ctx, fmt.Sprintf(cveIDKeyFormat, record.CveID), hash, string(j)).Err(); err != nil {
 				return xerrors.Errorf("Failed to HSet CVE. err: %w", err)
-			}
-			if expire > 0 {
-				if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
-					return xerrors.Errorf("Failed to set Expire to Key. err: %w", err)
-				}
-			} else {
-				if err := pipe.Persist(ctx, key).Err(); err != nil {
-					return xerrors.Errorf("Failed to remove the existing timeout on Key. err: %w", err)
-				}
 			}
 
 			if _, ok := newDeps[record.CveID]; !ok {
@@ -217,18 +205,8 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
 			if len(record.Edbs) > 0 {
 				for _, edb := range record.Edbs {
-					key := fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID)
-					if err := pipe.SAdd(ctx, key, member).Err(); err != nil {
+					if err := pipe.SAdd(ctx, fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID), member).Err(); err != nil {
 						return xerrors.Errorf("Failed to SAdd CVE. err: %w", err)
-					}
-					if expire > 0 {
-						if err := pipe.Expire(ctx, key, time.Duration(expire*uint(time.Second))).Err(); err != nil {
-							return xerrors.Errorf("Failed to set Expire to Key. err: %w", err)
-						}
-					} else {
-						if err := pipe.Persist(ctx, key).Err(); err != nil {
-							return xerrors.Errorf("Failed to remove the existing timeout on Key. err: %w", err)
-						}
 					}
 
 					newDeps[record.CveID][hash][edb.ExploitUniqueID] = struct{}{}
@@ -282,7 +260,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	if err != nil {
 		return xerrors.Errorf("Failed to Marshal JSON. err: %w", err)
 	}
-	if err := pipe.Set(ctx, depKey, string(newDepsJSON), time.Duration(expire*uint(time.Second))).Err(); err != nil {
+	if err := pipe.Set(ctx, depKey, string(newDepsJSON), 0).Err(); err != nil {
 		return xerrors.Errorf("Failed to Set depkey. err: %w", err)
 	}
 	if _, err := pipe.Exec(ctx); err != nil {
