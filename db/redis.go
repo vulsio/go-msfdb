@@ -194,7 +194,6 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			if err := pipe.HSet(ctx, fmt.Sprintf(cveIDKeyFormat, record.CveID), hash, string(j)).Err(); err != nil {
 				return xerrors.Errorf("Failed to HSet CVE. err: %w", err)
 			}
-
 			if _, ok := newDeps[record.CveID]; !ok {
 				newDeps[record.CveID] = map[string]map[string]struct{}{}
 			}
@@ -208,7 +207,6 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					if err := pipe.SAdd(ctx, fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID), member).Err(); err != nil {
 						return xerrors.Errorf("Failed to SAdd CVE. err: %w", err)
 					}
-
 					newDeps[record.CveID][hash][edb.ExploitUniqueID] = struct{}{}
 					if _, ok := oldDeps[record.CveID]; ok {
 						if _, ok := oldDeps[record.CveID][hash]; ok {
