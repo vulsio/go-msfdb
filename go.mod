@@ -3,7 +3,6 @@ module github.com/vulsio/go-msfdb
 go 1.17
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/go-redis/redis/v8 v8.4.0
 	github.com/inconshreveable/log15 v0.0.0-20200109203555-b30bc20e4fd1
@@ -11,7 +10,7 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/mattn/go-sqlite3 v2.0.3+incompatible
+	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1
