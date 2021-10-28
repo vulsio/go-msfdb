@@ -42,6 +42,7 @@ func executeServer(cmd *cobra.Command, args []string) (err error) {
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
+		db.Option{},
 	)
 	if err != nil {
 		if locked {
