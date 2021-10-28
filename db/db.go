@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/vulsio/go-msfdb/models"
 	"golang.org/x/xerrors"
 )
@@ -8,7 +10,7 @@ import (
 // DB :
 type DB interface {
 	Name() string
-	OpenDB(dbType, dbPath string, debugSQL bool) (bool, error)
+	OpenDB(dbType, dbPath string, debugSQL bool, option Option) (bool, error)
 	MigrateDB() error
 	CloseDB() error
 
@@ -23,13 +25,17 @@ type DB interface {
 	GetModuleMultiByEdbID([]string) (map[string][]models.Metasploit, error)
 }
 
+type Option struct {
+	RedisTimeout time.Duration
+}
+
 // NewDB :
-func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool, err error) {
+func NewDB(dbType string, dbPath string, debugSQL bool, option Option) (driver DB, locked bool, err error) {
 	if driver, err = newDB(dbType); err != nil {
 		return driver, false, xerrors.Errorf("Failed to new db: %w", err)
 	}
 
-	if locked, err := driver.OpenDB(dbType, dbPath, debugSQL); err != nil {
+	if locked, err := driver.OpenDB(dbType, dbPath, debugSQL, option); err != nil {
 		if locked {
 			return nil, true, err
 		}
