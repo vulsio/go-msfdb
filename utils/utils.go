@@ -44,10 +44,7 @@ func FileWalk(root string, walkFn func(r io.Reader, path string) error) error {
 		}
 		defer f.Close()
 
-		if err = walkFn(f, path); err != nil {
-			return err
-		}
-		return nil
+		return walkFn(f, path)
 	})
 	if err != nil {
 		return xerrors.Errorf("error in file walk: %w", err)
