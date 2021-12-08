@@ -252,8 +252,10 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 					}
 				}
 			}
-			if err := pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash).Err(); err != nil {
-				return xerrors.Errorf("Failed to HDel. err: %w", err)
+			if _, ok := newDeps[cveID][hash]; !ok {
+				if err := pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash).Err(); err != nil {
+					return xerrors.Errorf("Failed to HDel. err: %w", err)
+				}
 			}
 		}
 	}
