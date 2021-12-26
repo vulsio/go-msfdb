@@ -26,7 +26,7 @@ func init() {
 	fetchCmd.AddCommand(fetchMetasploitDBCmd)
 }
 
-func fetchMetasploitDB(cmd *cobra.Command, args []string) (err error) {
+func fetchMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 	if err := utils.SetLogger(viper.GetBool("log-to-file"), viper.GetString("log-dir"), viper.GetBool("debug"), viper.GetBool("log-json")); err != nil {
 		return xerrors.Errorf("Failed to SetLogger. err: %w", err)
 	}
