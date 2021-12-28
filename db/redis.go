@@ -194,9 +194,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			}
 
 			hash := fmt.Sprintf("%x", md5.Sum(j))
-			if err := pipe.HSet(ctx, fmt.Sprintf(cveIDKeyFormat, record.CveID), hash, string(j)).Err(); err != nil {
-				return xerrors.Errorf("Failed to HSet CVE. err: %w", err)
-			}
+			_ = pipe.HSet(ctx, fmt.Sprintf(cveIDKeyFormat, record.CveID), hash, string(j))
 			if _, ok := newDeps[record.CveID]; !ok {
 				newDeps[record.CveID] = map[string]map[string]struct{}{}
 			}
@@ -207,9 +205,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 			member := fmt.Sprintf(edbIDKeyMemberFormat, record.CveID, hash)
 			if len(record.Edbs) > 0 {
 				for _, edb := range record.Edbs {
-					if err := pipe.SAdd(ctx, fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID), member).Err(); err != nil {
-						return xerrors.Errorf("Failed to SAdd CVE. err: %w", err)
-					}
+					_ = pipe.SAdd(ctx, fmt.Sprintf(edbIDKeyFormat, edb.ExploitUniqueID), member)
 					newDeps[record.CveID][hash][edb.ExploitUniqueID] = struct{}{}
 					if _, ok := oldDeps[record.CveID]; ok {
 						if _, ok := oldDeps[record.CveID][hash]; ok {
@@ -247,13 +243,11 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 		for hash, edbs := range hashes {
 			for edb := range edbs {
 				if edb != "" {
-					if err := pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), fmt.Sprintf(edbIDKeyMemberFormat, cveID, hash)).Err(); err != nil {
-						return xerrors.Errorf("Failed to SRem. err: %w", err)
-					}
+					_ = pipe.SRem(ctx, fmt.Sprintf(edbIDKeyFormat, edb), fmt.Sprintf(edbIDKeyMemberFormat, cveID, hash))
 				}
 			}
-			if err := pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash).Err(); err != nil {
-				return xerrors.Errorf("Failed to HDel. err: %w", err)
+			if _, ok := newDeps[cveID][hash]; !ok {
+				_ = pipe.HDel(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), hash)
 			}
 		}
 	}
@@ -261,9 +255,7 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	if err != nil {
 		return xerrors.Errorf("Failed to Marshal JSON. err: %w", err)
 	}
-	if err := pipe.Set(ctx, depKey, string(newDepsJSON), 0).Err(); err != nil {
-		return xerrors.Errorf("Failed to Set depkey. err: %w", err)
-	}
+	_ = pipe.Set(ctx, depKey, string(newDepsJSON), 0)
 	if _, err := pipe.Exec(ctx); err != nil {
 		return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 	}
