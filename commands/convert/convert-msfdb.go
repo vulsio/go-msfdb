@@ -13,6 +13,7 @@ import (
 
 	"github.com/vulsio/go-msfdb/fetcher"
 	"github.com/vulsio/go-msfdb/git"
+	"github.com/vulsio/go-msfdb/models"
 	"github.com/vulsio/go-msfdb/utils"
 )
 
@@ -57,10 +58,15 @@ func convertMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 	fc := fetcher.Config{
 		GitClient: gc,
 	}
-
-	metasploits, err := fc.FetchMetasploitDB()
-	if err != nil {
+	var metasploits []models.Metasploit
+	if metasploits, err = fc.FetchMetasploitDB(); err != nil {
 		return xerrors.Errorf("Failed to fetch vulsio/msfdb-list. err: %w", err)
+	}
+
+	log15.Info("Converting Metasploits")
+	metasploitsMap := map[string][]models.Metasploit{}
+	for _, metasploit := range metasploits {
+		metasploitsMap[metasploit.CveID] = append(metasploitsMap[metasploit.CveID], metasploit)
 	}
 
 	log15.Info("Deleting Old Metasploits")
@@ -75,15 +81,15 @@ func convertMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 	}
 
 	log15.Info("Creating Metasploits")
-	for _, metasploit := range metasploits {
-		f, err := os.Create(filepath.Join(vulnDir, fmt.Sprintf("%s.json", metasploit.CveID)))
+	for cveID, metasploits := range metasploitsMap {
+		f, err := os.Create(filepath.Join(vulnDir, fmt.Sprintf("%s.json", cveID)))
 		if err != nil {
 			return xerrors.Errorf("Failed to create vuln data file. err: %w", err)
 		}
 
 		enc := json.NewEncoder(f)
 		enc.SetIndent("", "  ")
-		if err := enc.Encode(metasploit); err != nil {
+		if err := enc.Encode(metasploits); err != nil {
 			_ = f.Close() // ignore error; Write error takes precedence
 			return xerrors.Errorf("Failed to encode vuln data. err: %w", err)
 		}
