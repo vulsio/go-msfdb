@@ -1,4 +1,4 @@
-package commands
+package fetch
 
 import (
 	"time"
@@ -19,11 +19,30 @@ var fetchMetasploitDBCmd = &cobra.Command{
 	Use:   "msfdb",
 	Short: "Fetch the data of metasploit-framework cve's list",
 	Long:  `Fetch the data of metasploit-framework cve's list`,
-	RunE:  fetchMetasploitDB,
-}
+	PreRunE: func(cmd *cobra.Command, _ []string) error {
+		if err := viper.BindPFlag("debug-sql", cmd.Parent().PersistentFlags().Lookup("debug-sql")); err != nil {
+			return err
+		}
 
-func init() {
-	fetchCmd.AddCommand(fetchMetasploitDBCmd)
+		if err := viper.BindPFlag("dbpath", cmd.Parent().PersistentFlags().Lookup("dbpath")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("dbtype", cmd.Parent().PersistentFlags().Lookup("dbtype")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("batch-size", cmd.Parent().PersistentFlags().Lookup("batch-size")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("http-proxy", cmd.Parent().PersistentFlags().Lookup("http-proxy")); err != nil {
+			return err
+		}
+
+		return nil
+	},
+	RunE: fetchMetasploitDB,
 }
 
 func fetchMetasploitDB(_ *cobra.Command, _ []string) (err error) {

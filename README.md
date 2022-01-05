@@ -39,19 +39,19 @@ Available Commands:
   msfdb       Fetch the data of metasploit-framework cve's list
 
 Flags:
-  -h, --help          help for fetch
+      --batch-size int      The number of batch size to insert. (default 50)
+      --dbpath string       /path/to/sqlite3 or SQL connection string (default "$PWD/go-msfdb.sqlite3")
+      --dbtype string       Database type to store data in (sqlite3, mysql, postgres or redis supported) (default "sqlite3")
+      --debug-sql           SQL debug mode
+  -h, --help                help for fetch
+      --http-proxy string   http://proxy-url:port
 
 Global Flags:
-      --config string       config file (default is $HOME/.go-msfdb.yaml)
-      --dbpath string       /path/to/sqlite3 or SQL connection string
-      --dbtype string       Database type to store data in (sqlite3, mysql, postgres or redis supported)
-      --debug               debug mode (default: false)
-      --debug-sql           SQL debug mode
-      --http-proxy string   http://proxy-url:port (default: empty)
-      --log-dir string      /path/to/log
-      --log-json            output log as JSON
-      --log-to-file         output log to file
-      --quiet               quiet mode (no output)
+      --config string    config file (default is $HOME/.go-msfdb.yaml)
+      --debug            debug mode
+      --log-dir string   /path/to/log (default "/var/log/go-msfdb")
+      --log-json         output log as JSON
+      --log-to-file      output log to file
 
 Use "go-msfdb fetch [command] --help" for more information about a command.
 ```
@@ -70,26 +70,24 @@ Usage:
   go-msfdb search [flags]
 
 Flags:
-  -h, --help           help for search
-      --param string   All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)
-      --type string    All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)
+      --dbpath string   /path/to/sqlite3 or SQL connection string (default "$PWD/go-msfdb.sqlite3")
+      --dbtype string   Database type to store data in (sqlite3, mysql, postgres or redis supported) (default "sqlite3")
+      --debug-sql       SQL debug mode
+  -h, --help            help for search
+      --param string    All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]
+      --type string     All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default "CVE")
 
 Global Flags:
-      --config string       config file (default is $HOME/.go-msfdb.yaml)
-      --dbpath string       /path/to/sqlite3 or SQL connection string
-      --dbtype string       Database type to store data in (sqlite3, mysql, postgres or redis supported)
-      --debug               debug mode (default: false)
-      --debug-sql           SQL debug mode
-      --http-proxy string   http://proxy-url:port (default: empty)
-      --log-dir string      /path/to/log
-      --log-json            output log as JSON
-      --log-to-file         output log to file
-      --quiet               quiet mode (no output)
+      --config string    config file (default is $HOME/.go-msfdb.yaml)
+      --debug            debug mode
+      --log-dir string   /path/to/log (default "/var/log/go-msfdb")
+      --log-json         output log as JSON
+      --log-to-file      output log to file
 ```
 
 ###### Search Modules by CVE(eg. CVE-2014-0160)
 ```bash
-$ go run main.go search --type CVE --param CVE-2014-0160
+$ go-msfdb search --type CVE --param CVE-2014-0160
 
 Results: CVE-Metasploit Record
 ---------------------------------------
@@ -131,25 +129,24 @@ Usage:
   go-msfdb server [flags]
 
 Flags:
-      --bind string   HTTP server bind to IP address (default: loop back interface
-  -h, --help          help for server
-      --port string   HTTP server port number (default: 1327
+      --bind string     HTTP server bind to IP address (default "127.0.0.1")
+      --dbpath string   /path/to/sqlite3 or SQL connection string (default "$PWD/go-msfdb.sqlite3")
+      --dbtype string   Database type to store data in (sqlite3, mysql, postgres or redis supported) (default "sqlite3")
+      --debug-sql       SQL debug mode
+  -h, --help            help for server
+      --port string     HTTP server port number (default "1327")
 
 Global Flags:
-      --config string       config file (default is $HOME/.go-msfdb.yaml)
-      --dbpath string       /path/to/sqlite3 or SQL connection string
-      --dbtype string       Database type to store data in (sqlite3, mysql, postgres or redis supported)
-      --debug               debug mode (default: false)
-      --debug-sql           SQL debug mode
-      --http-proxy string   http://proxy-url:port (default: empty)
-      --log-dir string      /path/to/log
-      --log-json            output log as JSON
-      --quiet               quiet mode (no output)
+      --config string    config file (default is $HOME/.go-msfdb.yaml)
+      --debug            debug mode
+      --log-dir string   /path/to/log (default "/var/log/go-msfdb")
+      --log-json         output log as JSON
+      --log-to-file      output log to file
 ```
 
 ###### Starting Server  
 ```bash
-$ go run main.go server
+$ go-msfdb server
 
 INFO[06-18|17:23:14] Starting HTTP Server...
 INFO[06-18|17:23:14] Listening...                             URL=127.0.0.1:1327

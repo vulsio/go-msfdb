@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 
 	"github.com/spf13/cobra"
@@ -23,21 +25,38 @@ var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "Search the data of exploit",
 	Long:  `Search the data of exploit`,
-	RunE:  searchMetasploit,
+	PreRunE: func(cmd *cobra.Command, _ []string) error {
+		if err := viper.BindPFlag("debug-sql", cmd.PersistentFlags().Lookup("debug-sql")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("dbpath", cmd.PersistentFlags().Lookup("dbpath")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("dbtype", cmd.PersistentFlags().Lookup("dbtype")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("type", cmd.PersistentFlags().Lookup("type")); err != nil {
+			return err
+		}
+
+		if err := viper.BindPFlag("param", cmd.PersistentFlags().Lookup("param")); err != nil {
+			return err
+		}
+
+		return nil
+	},
+	RunE: searchMetasploit,
 }
 
 func init() {
-	RootCmd.AddCommand(searchCmd)
-
+	searchCmd.PersistentFlags().Bool("debug-sql", false, "SQL debug mode")
+	searchCmd.PersistentFlags().String("dbpath", filepath.Join(os.Getenv("PWD"), "go-msfdb.sqlite3"), "/path/to/sqlite3 or SQL connection string")
+	searchCmd.PersistentFlags().String("dbtype", "sqlite3", "Database type to store data in (sqlite3, mysql, postgres or redis supported)")
 	searchCmd.PersistentFlags().String("type", "CVE", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB")
-	if err := viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type")); err != nil {
-		panic(err)
-	}
-
 	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]")
-	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
-		panic(err)
-	}
 }
 
 func searchMetasploit(_ *cobra.Command, _ []string) (err error) {

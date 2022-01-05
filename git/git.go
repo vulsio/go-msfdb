@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/inconshreveable/log15"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-msfdb/utils"
@@ -65,6 +66,9 @@ func (gc Config) CloneRepo(url, repoPath string) (map[string]struct{}, error) {
 
 func clone(url, repoPath string) error {
 	commandAndArgs := []string{"clone", "--depth", "1", url, repoPath}
+	if httpProxy := viper.GetString("http-proxy"); httpProxy != "" {
+		commandAndArgs = append(commandAndArgs, "-c", httpProxy)
+	}
 	cmd := exec.Command("git", commandAndArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

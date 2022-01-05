@@ -96,6 +96,15 @@ func Exec(command string, args []string) (string, error) {
 	return stdoutBuf.String(), nil
 }
 
+// GetDefaultVulnDir :
+func GetDefaultVulnDir() string {
+	tmpDir, err := os.UserCacheDir()
+	if err != nil {
+		tmpDir = os.TempDir()
+	}
+	return filepath.Join(tmpDir, "vuln-data", "go-msfdb")
+}
+
 // GetDefaultLogDir :
 func GetDefaultLogDir() string {
 	defaultLogDir := "/var/log/go-msfdb"
