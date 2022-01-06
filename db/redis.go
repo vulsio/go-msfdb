@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-redis/redis/v8"
@@ -38,16 +39,18 @@ import (
   └───┴────────────────┴───────────────┴────────────────────────────────┘
 
 - Hash
-  ┌───┬────────────────┬───────────────┬──────────────┬──────────────────────────────┐
-  │NO │     KEY        │   FIELD       │     VALUE    │           PURPOSE            │
-  └───┴────────────────┴───────────────┴──────────────┴──────────────────────────────┘
-  ┌───┬────────────────┬───────────────┬──────────────┬──────────────────────────────┐
-  │ 1 │ MSF#CVE#$CVEID │    MD5SUM     │ $MODULE JSON │ TO GET MODULE FROM CVEID     │
-  ├───┼────────────────┼───────────────┼──────────────┼──────────────────────────────┤
-  │ 2 │ MSF#FETCHMETA  │   Revision    │    string    │ GET Go-Msfdb Binary Revision │
-  ├───┼────────────────┼───────────────┼──────────────┼──────────────────────────────┤
-  │ 3 │ MSF#FETCHMETA  │ SchemaVersion │     uint     │ GET Go-Msfdb Schema Version  │
-  └───┴────────────────┴───────────────┴──────────────┴──────────────────────────────┘
+  ┌───┬────────────────┬───────────────┬──────────────┬────────────────────────────────┐
+  │NO │     KEY        │   FIELD       │     VALUE    │           PURPOSE              │
+  └───┴────────────────┴───────────────┴──────────────┴────────────────────────────────┘
+  ┌───┬────────────────┬───────────────┬──────────────┬────────────────────────────────┐
+  │ 1 │ MSF#CVE#$CVEID │    MD5SUM     │ $MODULE JSON │ TO GET MODULE FROM CVEID       │
+  ├───┼────────────────┼───────────────┼──────────────┼────────────────────────────────┤
+  │ 2 │ MSF#FETCHMETA  │   Revision    │    string    │ GET Go-Msfdb Binary Revision   │
+  ├───┼────────────────┼───────────────┼──────────────┼────────────────────────────────┤
+  │ 3 │ MSF#FETCHMETA  │ SchemaVersion │     uint     │ GET Go-Msfdb Schema Version    │
+  ├───┼────────────────┼───────────────┼──────────────┼────────────────────────────────┤
+  │ 4 │ MSF#FETCHMETA  │ LastFetchedAt │  time.Time   │ GET Go-Msfdb Last Fetched Time │
+  └───┴────────────────┴───────────────┴──────────────┴────────────────────────────────┘
 **/
 
 const (
@@ -153,12 +156,24 @@ func (r *RedisDriver) GetFetchMeta() (*models.FetchMeta, error) {
 		return nil, xerrors.Errorf("Failed to ParseUint. err: %w", err)
 	}
 
-	return &models.FetchMeta{GoMsfdbRevision: revision, SchemaVersion: uint(version)}, nil
+	datestr, err := r.conn.HGet(ctx, fetchMetaKey, "LastFetchedAt").Result()
+	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			return nil, xerrors.Errorf("Failed to HGet LastFetchedAt. err: %w", err)
+		}
+		datestr = time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	}
+	date, err := time.Parse(time.RFC3339, datestr)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to Parse date. err: %w", err)
+	}
+
+	return &models.FetchMeta{GoMsfdbRevision: revision, SchemaVersion: uint(version), LastFetchedAt: date}, nil
 }
 
 // UpsertFetchMeta upsert FetchMeta to Database
 func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
-	return r.conn.HSet(context.Background(), fetchMetaKey, map[string]interface{}{"Revision": fetchMeta.GoMsfdbRevision, "SchemaVersion": fetchMeta.SchemaVersion}).Err()
+	return r.conn.HSet(context.Background(), fetchMetaKey, map[string]interface{}{"Revision": config.Revision, "SchemaVersion": models.LatestSchemaVersion, "LastFetchedAt": fetchMeta.LastFetchedAt}).Err()
 }
 
 // InsertMetasploit :

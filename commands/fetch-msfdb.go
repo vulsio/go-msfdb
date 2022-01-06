@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"fmt"
+	"time"
 
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
@@ -41,7 +41,7 @@ func fetchMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 		if locked {
 			return xerrors.Errorf("Failed to initialize DB. Close DB connection before fetching. err: %w", err)
 		}
-		return err
+		return xerrors.Errorf("Failed to open DB. err: %w", err)
 	}
 	defer func() {
 		_ = driver.CloseDB()
@@ -52,9 +52,9 @@ func fetchMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 		return xerrors.Errorf("Failed to get FetchMeta from DB. err: %w", err)
 	}
 	if fetchMeta.OutDated() {
-		return fmt.Errorf("Failed to Insert CVEs into DB. SchemaVersion is old. SchemaVersion: %+v", map[string]uint{"latest": models.LatestSchemaVersion, "DB": fetchMeta.SchemaVersion})
+		return xerrors.Errorf("Failed to Insert CVEs into DB. err: SchemaVersion is old. SchemaVersion: %+v", map[string]uint{"latest": models.LatestSchemaVersion, "DB": fetchMeta.SchemaVersion})
 	}
-
+	// If the fetch fails the first time (without SchemaVersion), the DB needs to be cleaned every time, so insert SchemaVersion.
 	if err := driver.UpsertFetchMeta(fetchMeta); err != nil {
 		return xerrors.Errorf("Failed to upsert FetchMeta to DB. err: %w", err)
 	}
@@ -73,6 +73,11 @@ func fetchMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 	log15.Info("Insert info into go-msfdb.", "db", driver.Name())
 	if err := driver.InsertMetasploit(records); err != nil {
 		return xerrors.Errorf("Failed to insert. dbpath: %s, err: %w", viper.GetString("dbpath"), err)
+	}
+
+	fetchMeta.LastFetchedAt = time.Now()
+	if err := driver.UpsertFetchMeta(fetchMeta); err != nil {
+		return xerrors.Errorf("Failed to upsert FetchMeta to DB. dbpath: %s, err: %w", viper.GetString("dbpath"), err)
 	}
 
 	return nil
