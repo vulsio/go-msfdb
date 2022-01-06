@@ -156,10 +156,10 @@ func (r *RedisDriver) GetFetchMeta() (*models.FetchMeta, error) {
 		return nil, xerrors.Errorf("Failed to ParseUint. err: %w", err)
 	}
 
-	datestr, err := r.conn.HGet(ctx, fetchMetaKey, "LastFetchedAt ").Result()
+	datestr, err := r.conn.HGet(ctx, fetchMetaKey, "LastFetchedAt").Result()
 	if err != nil {
 		if !errors.Is(err, redis.Nil) {
-			return nil, xerrors.Errorf("Failed to HGet LastFetchedAt . err: %w", err)
+			return nil, xerrors.Errorf("Failed to HGet LastFetchedAt. err: %w", err)
 		}
 		datestr = time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	}
@@ -173,7 +173,7 @@ func (r *RedisDriver) GetFetchMeta() (*models.FetchMeta, error) {
 
 // UpsertFetchMeta upsert FetchMeta to Database
 func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
-	return r.conn.HSet(context.Background(), fetchMetaKey, map[string]interface{}{"Revision": config.Revision, "SchemaVersion": models.LatestSchemaVersion, "LastFetchedAt ": fetchMeta.LastFetchedAt}).Err()
+	return r.conn.HSet(context.Background(), fetchMetaKey, map[string]interface{}{"Revision": config.Revision, "SchemaVersion": models.LatestSchemaVersion, "LastFetchedAt": fetchMeta.LastFetchedAt}).Err()
 }
 
 // InsertMetasploit :
