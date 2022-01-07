@@ -42,12 +42,11 @@ func convertMetasploitDB(_ *cobra.Command, _ []string) (err error) {
 
 	vulnDir := viper.GetString("vuln-dir")
 	if f, err := os.Stat(vulnDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(vulnDir, 0700); err != nil {
-				return xerrors.Errorf("Failed to create vuln directory. err: %w", err)
-			}
-		} else {
-			return xerrors.Errorf("Failed to check vuln directory. err: %w", err)
+		if !os.IsNotExist(err) {
+			return xerrors.Errorf("Failed to check vuln directory. err: %w", err)			
+		}
+		if err := os.MkdirAll(vulnDir, 0700); err != nil {
+			return xerrors.Errorf("Failed to create vuln directory. err: %w", err)
 		}
 	} else if !f.IsDir() {
 		return xerrors.Errorf("Failed to check vuln directory. err: %s is not directory", vulnDir)
