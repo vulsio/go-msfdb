@@ -28,7 +28,6 @@ BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/vulsio/go-msfdb/config.Version=$(VERSION)' \
 	-X 'github.com/vulsio/go-msfdb/config.Revision=$(REVISION)'
 GO := GO111MODULE=on go
-GO_OFF := GO111MODULE=off go
 
 all: build test
 
@@ -39,7 +38,7 @@ install: main.go
 	$(GO) install -ldflags "$(LDFLAGS)"
 
 lint:
-	$(GO_OFF) get -u github.com/mgechev/revive
+	$(GO) install github.com/mgechev/revive@latest
 	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
