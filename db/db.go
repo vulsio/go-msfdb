@@ -25,6 +25,7 @@ type DB interface {
 	GetModuleMultiByEdbID([]string) (map[string][]models.Metasploit, error)
 }
 
+// Option :
 type Option struct {
 	RedisTimeout time.Duration
 }
