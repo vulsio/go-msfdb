@@ -22,7 +22,6 @@ import (
 
 	"github.com/vulsio/go-msfdb/config"
 	"github.com/vulsio/go-msfdb/models"
-	"github.com/vulsio/go-msfdb/utils"
 )
 
 const (
@@ -141,13 +140,10 @@ func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err 
 	}()
 
 	// Delete all old records
-	var errs utils.Errors
-	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Metasploit{}).Error)
-	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Edb{}).Error)
-	errs = errs.Add(tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Reference{}).Error)
-	errs = utils.DeleteNil(errs)
-	if len(errs.GetErrors()) > 0 {
-		return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())
+	for _, table := range []interface{}{models.Metasploit{}, models.Edb{}, models.Reference{}} {
+		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(table).Error; err != nil {
+			return xerrors.Errorf("Failed to delete old records. err: %w", err)
+		}
 	}
 
 	batchSize := viper.GetInt("batch-size")
