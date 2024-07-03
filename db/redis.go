@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -202,7 +204,12 @@ func (r *RedisDriver) InsertMetasploit(records []models.Metasploit) (err error) 
 	}
 
 	log15.Info("Inserting Modules having CVEs...")
-	bar := pb.StartNew(len(records))
+	bar := pb.StartNew(len(records)).SetWriter(func() io.Writer {
+		if viper.GetBool("log-json") {
+			return io.Discard
+		}
+		return os.Stderr
+	}())
 	for idx := range chunkSlice(len(records), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, record := range records[idx.From:idx.To] {
