@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -183,7 +184,12 @@ func (r *RDBDriver) InsertMetasploit(records []models.Metasploit) (err error) {
 }
 
 func (r *RDBDriver) deleteAndInsertMetasploit(records []models.Metasploit) (err error) {
-	bar := pb.StartNew(len(records))
+	bar := pb.StartNew(len(records)).SetWriter(func() io.Writer {
+		if viper.GetBool("log-json") {
+			return io.Discard
+		}
+		return os.Stderr
+	}())
 	tx := r.conn.Begin()
 	defer func() {
 		if err != nil {
