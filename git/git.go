@@ -49,7 +49,7 @@ func (gc Config) CloneRepo(url, repoPath string) (map[string]struct{}, error) {
 		return nil, err
 	}
 
-	err = filepath.Walk(repoPath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(repoPath, func(path string, info os.FileInfo, _ error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -72,9 +72,4 @@ func clone(url, repoPath string) error {
 		return xerrors.Errorf("failed to clone: %w", err)
 	}
 	return nil
-}
-
-func generateGitArgs(repoPath string) []string {
-	gitDir := filepath.Join(repoPath, ".git")
-	return []string{"--git-dir", gitDir, "--work-tree", repoPath}
 }
