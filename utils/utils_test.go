@@ -2,7 +2,6 @@ package utils
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,18 +19,13 @@ func touch(t *testing.T, name string) {
 }
 
 func write(t *testing.T, name string, content string) {
-	err := ioutil.WriteFile(name, []byte(content), 0666)
-	if err != nil {
+	if err := os.WriteFile(name, []byte(content), 0666); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestFileWalk(t *testing.T) {
-	td, err := ioutil.TempDir("", "walktest")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(td)
+	td := t.TempDir()
 
 	if err := os.MkdirAll(filepath.Join(td, "dir"), 0755); err != nil {
 		t.Fatal(err)
@@ -55,7 +49,8 @@ func TestFileWalk(t *testing.T) {
 			sawFoo2 = true
 		}
 		if strings.HasSuffix(path, "foo3") {
-			contentFoo3, err = ioutil.ReadAll(r)
+			var err error
+			contentFoo3, err = io.ReadAll(r)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -63,8 +58,7 @@ func TestFileWalk(t *testing.T) {
 		return nil
 	}
 
-	err = FileWalk(td, walker)
-	if err != nil {
+	if err := FileWalk(td, walker); err != nil {
 		t.Fatal(err)
 	}
 	if sawDir {
