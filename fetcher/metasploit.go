@@ -83,7 +83,7 @@ func convertToModel(path string, item *Module) (models.Metasploit, error) {
 	cveID := utils.FileNameWithoutExtension(path)
 
 	// edbID
-	edbIDs := []models.Edb{}
+	edbIDs := make([]models.Edb, 0, len(item.EdbIDs))
 	for _, e := range item.EdbIDs {
 		edbID := models.Edb{
 			ExploitUniqueID: e,
@@ -92,7 +92,7 @@ func convertToModel(path string, item *Module) (models.Metasploit, error) {
 	}
 
 	// References
-	refs := []models.Reference{}
+	refs := make([]models.Reference, 0, len(item.References))
 	for _, r := range item.References {
 		ref := models.Reference{
 			Link: r,
