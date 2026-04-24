@@ -7,7 +7,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/inconshreveable/log15 v3.0.0-testing.5+incompatible
-	github.com/labstack/echo/v4 v4.15.0
+	github.com/labstack/echo/v4 v4.15.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
