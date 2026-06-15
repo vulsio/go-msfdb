@@ -6,7 +6,7 @@ ENV REPOSITORY github.com/vulsio/go-msfdb
 COPY . $GOPATH/src/$REPOSITORY
 RUN cd $GOPATH/src/$REPOSITORY && make install
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 LABEL maintainer takuzoo3868
 
